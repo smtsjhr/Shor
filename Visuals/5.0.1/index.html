@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+
+<canvas id="canvas" width="500" height="600" style="border:1px solid #d3d3d3;"></canvas>
+<script type="text/javascript" src="5.0.1.js" async></script>
+
+
+
+<button name="step+" type="button" style="position: absolute; top:70px; left:50px;" onclick="stepup()" >+</button>
+
+<button name="step-" type="button" style="position: absolute; top:70px; left:20px;" onclick="stepdown()" >--</button>
+
+
+<button name="circuit-" type="button" style="position: absolute; top:30px; left:20px;" onclick="circuit_stepdown()" >--</button>
+
+<button name="circuit+" type="button" style="position: absolute; top:30px; left:50px;" onclick="circuit_stepup()" >+</button>
+
+
+<button name="run" type="button" style="position: absolute; top:90px; left:30px;" onclick="run_circuit()" >Run</button>
+
+<button name="clear" type="button" style="position: absolute; top:110px; left:10px;" onclick="clear_samples()" >Clear Samples</button>
+
+
+
+<!--
+ <input type='range' min='0' max='3' value='0' step='1' id='stepslider' style="position: absolute; top:20px; left:20px;"></input>
+-->
+
+<!--
+<input type='range' min='1' max='64' value='15' id='Mslider' style="position: absolute; bottom:30px; right:40px;"></input>
+-->
+
+
+<div style="display:none;">
+    <img id="basiskets32" src="basiskets32_14pt.png" alt="basis kets"></div> 
+
+<div style="display:none;">
+<img id="circuit_0" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/HxI%20circuit.png" alt="Circuit">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_1" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U%20circuit.png" alt="Circuit">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_2"
+src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/3H-U-M12%20circuit.png" alt="Circuit">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_3"
+src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U-M2-I.png" alt="Circuit">
+</div> 
+
+
+<div style="display:none;">
+<img id="circuit_4" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U-M2-I-M1.png" alt="Circuit">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_5" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U-M2-QFT.png" alt="Circuit">
+</div> 
+
+
+<div style="display:none;">
+<img id="circuit_6" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U-M2-QFT_M1.png
+" alt="Circuit">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_7" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U-QFT%20new.png
+" alt="Circuit">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_8" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/H-U-QFT_M12%20new.png
+" alt="Circuit">
+</div> 
+
+
+
+<div style="display:none;">
+<img id="circuit_state_label_0" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/circuit_state_label_0.png" alt="State Label">
+</div> 
+
+<div style="display:none;">
+<img id="circuit_state_label_1" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/circuit_state_label_1.png" alt="State Label">
+</div>
+
+<div style="display:none;">
+<img id="circuit_state_label_2" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/circuit_state_label_2.png" alt="State Label">
+</div>
+
+<div style="display:none;">
+<img id="circuit_state_label_3" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/circuit_state_label_3.png" alt="State Label">
+</div>
+
+<div style="display:none;">
+<img id="circuit_state_label_4" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/circuit_state_label_4.png" alt="State Label">
+</div>
+
+<div style="display:none;">
+<img id="circuit_state_label_5" src="https://s3-us-west-2.amazonaws.com/s.cdpn.io/3560077/circuit_state_label_5.png" alt="State Label">
+</div>
+
+
+</body>
+</html>

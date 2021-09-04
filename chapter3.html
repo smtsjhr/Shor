@@ -1,0 +1,888 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Shor's Algorithm Ch. 3</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+
+		<link rel="stylesheet" href="dist/theme/white.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<style>
+			.reveal section {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+				background-color: white;
+			}
+			.div_bg {
+				background-color: white;
+			}
+			.vspace {
+				height: 5em
+			}
+			.slide_scroll {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+			}
+			.reveal section p {
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			
+		  }
+		  .reveal section ol {
+			
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			list-style-type: upper-alpha;
+			margin-bottom: 1em;
+		  }
+
+		  .reveal section iframe {
+			box-sizing: border-box;
+			display: flex; 
+			align-items: center; 
+			justify-content: center; 
+			border: 0px solid; 
+			margin: 0em 0; 
+			padding: 0em; 
+			background-color: white 
+		  }
+		</style>
+		<div class="reveal">
+			<div class="slides">
+			
+<section>
+	<h3>Shor's Algorithm</h3>
+	<hr>
+	<h4>Chapter 3</h4>
+	<h4>Factoring and Period Finding</h4>
+
+	<div style=" position: absolute;
+	bottom: 0px;">
+		<a href="index.html">Contents</a>
+	</div>
+</section>
+
+<section>
+	
+	  <p>Coming up with fast factoring algorithms is a challenging task. As we found out in a previous chapter, just straight out guessing and searching for factors of some number \(N\) by trial-and-error isn't efficient in practice when we have to deal with really large numbers.</p>
+	
+	
+	  <p>In the first chapter, we tested if some guess \(a\) is a factor of \(N\) by simply checking if \(a\) divides \(N\) or not. If so, then \(a\) is indeed a factor of \(N\); otherwise its not. This is essentially the most straightforward, yet naive, way to go about finding factors.</p>
+	
+	
+	  <p>In the second chapter, we tried to be a bit more resourceful with our initial guess at a factor. If \(a\) does not happen to divide \(N\), then we go further and check if \(a\) at least happens to share a nontrivial common factor with \(N\). This additional test can be quickly performed classically using the Euclidean Algorithm to calculate the greatest common divisor of \(a\) and \(N\). If \(gcd(a,N) > 1\), then we consider ourselves lucky and happily celebrate the quantity \(gcd(a,N)\) as a nontrivial factor of \(N\)!</p>
+	
+	
+	  <p>But if instead our choice of \(a\) satisfies \(gcd(a,N) = 1\), then we aren't so lucky! This means that \(a\) and \(N\) are coprime and don't share any factors besides the trivial 1. As it turns out, amongst the hardest numbers to factor, like really large semi-primes where nontrivial factors are exceptionally rare, the chances of getting lucky and randomly guessing a factor of \(N\) in this way are slim!</p>
+	
+	
+	  <p>So now what? Despite being fairly basic and straightforward, our guessing strategies don't really fair well in practice when \(N\) is large. We are going to have to get much more clever in our strategy if we hope to factor numbers quickly.</p>
+	
+	
+	  <p>The approach we'll outline here turns the factoring problem on its side and attempts to find the factors of a number by finding something else seemingly unrelated to factoring -- the way a certain function repeats itself, called the **period**. We'll learn how knowledge of this period could allow us to quickly calculate the factors of a number. To understand how this approach works, we will apply the number theoretic techniques of modular arithmetic and the the Euclidean algorithm that we developed in the last chapter.</p>
+	
+	
+	  <p>Unfortunately, we'll also see that finding this period using a classical algorithm takes nearly as long as finding the factors directly using our previous impractical method which requires an exponential number of steps. Remarkably however, all our work will pay off since this alternate route to factoring is just the problem a quantum computer can solve much more efficiently using Shor's algorithm!</p>
+	
+</section>
+
+<section>
+	
+	
+	  <p>
+		  Let's start with a familiar function we've likely seen before:
+		  \[f(x) = x^2.\]
+		  This function simply evaluates a number \(x\) to its "square", which is what we get when we multiply \(x\) by itself.
+		  In particular, let's only consider this function evaluated on integers \(x\) as shown in the plot below.
+	  </p>
+	
+	
+	  <p>**insert static plot of \(x^2\) **</p>
+	
+	
+	
+	  <p>As made evident in the plot, the function's values quickly increases without bound as the magnitude of \(x\) increases. That's really not so surprising though since multiplying an integer \(x\) by itself typically results in a larger value. There's only a few exceptional integers that don't behave in this way.</p>
+	
+	
+	  <h4>Question:</h4>
+	
+	
+	  <p>What integer values \(x\) square to \(1\)? That is, what integers satisfy \(f(x) = x^2 = 1\)?</p>
+	
+	
+	
+	
+	  <h4>Answers:</h4>
+	
+	  <p><b>(select all valid choices)</b> </p>
+	<br>
+	  <ol>
+		<li>\(x = 0\)</li>
+		<li>\(x = 1\)</li>
+		<li>\(x = -1\)</li>
+	  </ol>
+	
+	  <div class="vspace"></div>
+	
+	  <h4>Explanation:</h4>
+	
+	
+	  <p>There exists two solutions to the equation \(x^2=1\). These are given by \(x= \pm\sqrt{1}\), namely, \(x=1\) and \(x=-1\).</p>
+	
+</section>
+
+
+<section>
+	
+	
+	<p>Since the product of two negative numbers is positive, the function \(f(x)=x^2\) maps any number \(x\) and its negative counterpart \(-x\) to the same value: \(f(x) = f(-x)\). Consequently, the function exhibits a nice symmetry across the vertical axis which splits the positive and negative horizontal axis.</p>
+	
+	<p>	
+		In particular, there are only two distinct integer values for which the function evaluates to \(f(x)=x^2=1\); namely,
+		\[x=+1 \quad \text{and} \quad x=-1.\]
+		For this reason, we'll refer to both \(+1\) and \(-1\) as the two <b>trivial square roots of \(1\)</b>.</p>
+	
+	
+	<p>These properties regarding the function \(f(x)=x^2\) may seem quite mundane and obvious in our usual setting of ordinary arithmetic, so let's make thing's more interesting by exploring what happens when we work in modular arithmetic!</p>
+	
+	
+	<p>
+		Instead of just squaring the integers, let's now consider the function defined by squaring the integers and then reducing the quantity modulo some number \(N\):
+		\[f_{N}(x) = x^2 (\text{mod } N). \]
+		Remember that reducing a number modulo \(N\) just corresponds to its remainder after dividing that number by \(N\). Moreover, since we are working modulo \(N\) where any integer is always congruent to some integer in the range \(0\leq x \leq N-1\) , we'll restrict the domain and range of the function \(f_N\) to the integers \(0\leq x \leq N-1\).
+	</p>
+	
+	
+	<p>Also note that we have added a subscript to our function notation \(f_N\) to denote the modulus \(N\) as an additional parameter. In this way, each positive integer \(N\) defines a distinct function that we can consider.</p>
+	
+	
+	<p>An interactive plot of the function \(f_N\) is shown below. Vary the modulus parameter \(N\) and observe how the function behaves.</p>
+	
+	
+	<p><iframe src="Visuals/3.1/index.html" width = "520" height = "525" > </iframe></p>
+	
+	
+	<p>There's a couple of noteworthy things in this setting of modular arithmetic. When working modulo \(N\), the values of the function \(f_N\) no longer increase without bound, because they will always lie in the range \(0 \leq f_N(x) \leq N-1\) after reducing modulo \(N\).</p>
+	
+	
+	<p>
+		Also, notice that the plot of the function \(f_N\) exhibits a similar reflective symmetry that we observed in the setting of ordinary arithmetic, but now it takes place across the vertical line that splits the range \(0\leq x \leq 1\) in half at the value \(\frac{N}{2}\). This is explained by recalling that, modulo \(N\), a negative integer \(-x\) is equivalent to \(N - x\). Therefore, every pair of integers \(x\) and \(N-x\) get mapped to identical values by the function:
+		
+		\[ f_N(x)=f_N(N-x). \]
+		
+		In particular, since \(-1 = N - 1 (\text{mod } N)\), this implies that both the quantities $x=1$ and $x=N-1$  get mapped to \(1 \) modulo
+		\(N\):
+		
+		\[ f_N(1)=f_N(N-1)=1 (\text{mod} N).\]
+		
+		So just as we considered both \(1\) and \(-1\) trivial square roots of \(1\) in ordinary arithmetic, in modular arithmetic we'll consider both \(1\) and \(N-1\) to be **trivial** square roots of \(1 (\text{mod } N) \). You can verify using the interactive plot of \(f_N(x)=x^2 (\text{mod } N)\) shown above that this is indeed the case, regardless of our choice of modulus \(N\).
+	</p>
+	
+	
+	
+	<h4>Question:</h4>
+	
+	<p>Does there exist any choice of modulus \(N\), such that \(f_N(x) = 1 (\text{mod } N)\) for any other integers besides the trivial values \(x=1\) and \(x= N-1\)?</p>
+	
+	
+	
+			<h4> Answers:</h4>
+	
+			<ol>
+				<li> Yes </li>
+				<li> No </li>
+			</ol>
+	
+	
+</section>
+
+
+<section>
+	
+	<p>
+	Something special and unique to modular arithmetic is going on here! Unlike in ordinary arithmetic, where there only ever exists two trivial square roots of \(1\), now its possible for there to be more depending on the modulus \(N\).</p>
+	
+	<p>Again, a plot of \(f_N(x)=x^2 (\text{mod } N) \) is shown below, but now all points for which \(f_N(x)=1\) are highlighted in red. You can observe for some choices of \(N\) that there are  other integers \(x\) besides \(+1\) and \(N-1\) that satisfy \(f_N(x)=1\). We'll refer to these as nontrivial square roots of 1 modulo \(N\).
+	</p>
+	<br>
+	
+
+	<p><iframe src="Visuals/3.2/index.html" width = "520" height = "525"  > </iframe></p>
+
+	
+	<br>
+	
+	<p>Now you may be wondering: why do we care about the existence of nontrivial square roots of \(1\) modulo \(N\)? Well, it turns out that they can be used to find factors of \(N\)! To see how, let's return to the setting of ordinary arithmetic and reconsider the function \(f(x)=x^2\) and what it means when we have a solution to \(f(x)=1\).</p>
+	
+	<br>
+	
+	<p>
+		Algebraically speaking, trivial square roots of \(1\) are just the solutions to the equation
+		\[x^2 = 1, \]
+		which we can rewrite as the polynomial equation
+		\[x^2 - 1 = 0. \]
+		When expressed in this way we can go further and use an old trick to rewrite the left-hand side by factoring the polynomial as
+		\[x^2 - 1 = (x +1)(x-1). \]
+		This allows us to reinterpret our trivial square roots of \(1\) as solutions to the equation
+		\[(x+1)(x-1) = 0. \]
+	</p>
+		
+	<p>This doesn't seem much more illuminating, and you're probably still wondering how this is relevant for our purpose of finding factors of \(N\). Here's the thing: in modular arithmetic we can perform certain algebraic manipulations just as we do in ordinary arithmetic!</p>
+	
+	<br>
+	
+	<p>
+		So if we consider \(f_N(x)=x^2 (\text{mod } N) = 1\), then square roots of \(1\) modulo \(N\) can be thought of as solutions to the equation
+		\[x^2 = 1 (\text{mod } N). \]
+		We can also rewrite this as
+		\[x^2 - 1 = 0 (\text{mod } N), \]
+		and then factor the left-hand-side of the equation similarly:
+		\[(x+1)(x-1)= 0 (\text{mod } N) . \]
+	</p>
+	
+	<p>Now in modular arithmetic, this equation means something more!
+	</p>
+	
+	<h4>Question:</h4>
+	<p>What does this equation tell us? If \(x\) is a square root of \(1 \ (\text{mod } N)\), then does \(N\) divide the quantity \((x+1)(x-1)\)?</p>
+	
+	<h4>Answers:</h4>
+	
+	<ol>
+	<li>Yes</li>
+	<li>No</li>
+	</ol>
+	
+	<div class="vspace"></div>
+
+	<h4>Explanation:</h4>
+	
+	<p>
+		By definition of what it means to be congruent to \(0 (\text{mod } N)\), the statement
+		\[(x+1)(x-1)=0(\text{mod } N)\]
+		implies that there exists some integer \(j\) such that
+		\[(x+1)(x-1)=jN.\]
+		This is equivalent to
+		\[ \frac{(x+1)(x-1)}{N}=j. \]
+		Therefore it is true that \(N\) divides the product \((x+1)(x-1)\).
+	</p>
+	
+	
+</section>
+
+
+<section>
+	
+	<p>
+	  To understand how all this helps us find factors of \(N\), let's unpack what we have learned thus far.
+	
+	  <br>
+	
+	  A square root of \(1 (\text{mod } N)\) is an integer \(x\) that satisfies
+	  \[f_N(x) = x^2 = 1 (\text{mod } N ), \] which implies
+	  \[(x+1)(x-1)=0(\text{mod } N). \]
+	  Equivalently, this just means that there exists some integer \(j\) such that
+	  \[(x+1)(x-1) = jN.\]
+	  In other words, \((x+1)(x-1)\) is equal to some multiple of \(N\), which by definition implies that \(N\) divides \((x+1)(x-1)\).
+	
+	  <br>
+	
+	  This is our main take away here: if we know some integer \(x\) that is a solution to \(f_N(x) = 1\), then we also know that \(N\) divides the quantity \( (x+1)(x-1)\).
+	
+	  <br>
+	
+	  Now if we call \(A =(x+1)\) and \(B=(x-1)\), then our expression reads
+	  \[A\cdot B = jN.\]
+	  Unless \(j=1\), this is not quite our desired factorization of \(N\) in the form of two integers \(a\) and \(b\) such that \(N=a\cdot b\), but it's close!
+	
+	  <br>
+	
+	  The worthwhile thing for us in regards to factoring \(N\) is that, since \(N\) divides the quantity \( (x+1)(x-1) \), then \( (x+1) \) or \( (x-1) \) must share some common factors with \(N\) and possibly both!
+	</p>
+	
+	
+	  <h4>Question:</h4>
+	
+	  <p>Given an integer \(x\) which satisfies \(f_N(x)=1\), what can we calculate to determine factors of \(N\)?</p>
+	
+	
+	  <h4>Answers:</h4>
+	
+	  <ol>
+	  <li>\(\frac{N}{(x+1)}\) or \(\frac{N}{(x+1)}\)</li>
+	
+	  <li>\(gcd(x+1, N)\) or \(gcd(x-1, N) \)</li>
+	  </ol>
+	
+	  <div class="vspace"></div>
+
+	  <h4>Explanation:<h4>
+	<p>**missing**</p>
+	
+	
+</section>
+
+<section>
+	
+	  <p>We've managed to come up with a new strategy for finding factors of \(N\)! All we need is an integer \(x\) that happens to be a square root of \(1 (\text{mod } N)\).</p>
+	
+	
+	  <p>Then even though the integers \((x+1)\) and \((x-1)\) may not be factors of \(N\), we know that at least one of them shares a common factor with \(N\).</p>
+	
+	
+	  <p>We can determine such a factor by simply calculating the greatest common divisors \(gcd(x+1,N)\) and \(gcd(x-1, N)\). This is great, because we can easily compute greatest common divisors quickly using the classical Euclidean algorithm we learned in the previous chapter!</p>
+	
+	
+	  <p>You can see all this manifest in the figure below, where you can select any square root of \(1 (\text{mod } N)\) and observe the displayed quantities for \(gcd(x+1,N)\) and \(gcd(x-1, N)\).</p>
+	
+	
+	  <p><iframe src="Visuals/3.3/index.html" width = "520" height = "575"  > </iframe></p>
+	
+	  
+	
+	
+	  <h4>Question:</h4>
+	
+	  <p>
+		  Regardless of our choice of modulus \(N\), do all square roots of \(1 (\text{mod } N)\) always give us non-trivial factors of
+		  \(N\) that are not \(1\) or \(N\)?
+	  </p>
+	
+	  <h4>Answers:</h4>
+	
+	  <ol>
+	  <li>Yes</li>
+	  <li>No</li>
+	  </ol>
+	
+	  <div class="vspace"></div>
+	  <h4>Explanation:</h4>
+	
+	  <p>No!</p>
+	
+</section>
+
+
+<section>
+	
+	  <p>If \(N\) is an odd number, notice that both of the trivial square roots \(x=1\) and  \(x=N-1\) only ever give us trivial factors of \(N\) when we compute the respective greatest common divisors \(gcd(x+1,N)\) and \(gcd(x-1,N)\).</p>
+	
+	
+	  <p>The only exceptions to this happen when \(N\) is even. In this case, we get \(2\) as a factor using this method. But that's kind of already obvious since \(N\) is even!  In what follows, we won't need to concern ourselves with trying to find factors of even numbers since we already know \(2\) is always a factor of an even number. Therefore, we'll stay focused on trying to factor odd numbers using our strategies.</p>
+	
+	
+	  <p>
+		  When we only consider odd numbers \(N\), then for any integer \(x\) that happens to be a square root of \(1 \ (\text{mod } N)\), its actually always the case that the two greatest common divisors we compute give us a nice factorization of \(N\) as
+		  \[N = gcd(x+1,N)\cdot gcd(x-1,N). \]
+	  </p>
+	
+	
+	  <p>However, as we observed, if \(x\) is a trivial square root then these two factors are merely the trivial factors of \(N\), which we just aren't interested in! Fortunately, as long as \(x\) is a non-trivial square root then our two factors are guaranteed to be non-trivial factors of \(N\)!</p>
+	
+	  <p>Equipped with this knowledge, feel free to explore the figure shown below again to see all these claims at play.</p>
+	
+	
+	  <p><iframe src="Visuals/3.3/index.html" width = "520" height = "575"  > </iframe></p>
+	
+	 
+	
+	  <p>So for this whole strategy to even be worthwhile in our pursuit of finding non-trivial factors of some number \(N\), what we really need our hands on is a non-trivial square root of \(1 (\text{mod } N)\) since the trivial ones only yield trivial factors of \(N\).</p>
+	
+	
+	  <p>But what if there are no non-trivial square roots of \(1 (\text{mod } N)\) for a particular \(N\) that we want to factor? There are actually many integers \(N\) that only ever have the two trivial square roots, and so this strategy would never give us nontrivial factors of \(N\) in that case. So what do we do then?</p>
+	
+	
+	
+	
+	  <p>
+		  Well actually, we don't need to worry about running into this problem! It turns out that the only time an odd integer \(N\) does not have any nontrivial square roots, is if \(N\) has only one distinct prime factor. This means that \(N\) is a prime power of the form
+		  \[ N = p^k \]
+		  for some odd prime \(p\) and integer \(k\). As we learned in the first chapter, we already have a way of finding factors of prime powers like this using an efficient classical algorithm!
+	  </p>
+	
+	
+	  <p>Therefore, we'll only be applying the strategy we developed here for factoring odd numbers \(N\) that are not prime powers. This means that \(N\) must have at least two distinct prime factors. In this scenario, we are assured that \(N\) actually has some non-trivial square roots for us to find, so this whole approach isn't in vain!</p>
+	
+	  <div style="text-align: center;">
+		<div style="display: inline-block; text-align: left;">
+	  <p>We can summarize our approach for factoring an odd non-prime power, \(N\), as follows:</p>
+	
+
+	  <p>
+		  <b>Step 1: </b>Find a non trivial square root of \(1 (\text{mod } N)\) which satisfies
+		  \[f_N(x)=1 (\text{mod } N). \]
+	  </p>
+	
+	
+	  <p>
+		  <b>Step 2:</b> Compute \(gcd(x+1,N)\) and \(gcd(x-1,N)\) to get the non-trivial factorization of \(N\) as
+		  \[N = gcd(x+1,N)\cdot gcd(x-1,N). \]
+	  </p>
+	  </div>
+	  </div>
+	
+	
+	  <p>The remarkable thing about this factoring algorithm is that its quick and easy to perform the second step using the Euclidean Algorithm to compute the greatest common divisors.</p>
+	
+	
+	  <p>However, to arrive at this step, we first need to find a non-trivial square root of \( 1 \ (\text{mod } N)\). If we can't figure out how to find one efficiently, then we can't expect to factor \(N\) efficiently using this strategy!</p>
+	
+</section>
+
+<section>
+	
+	  <p>Having understood our new approach to factoring, we've now come to the real challenge! Assuming we are given some number \(N\), and verified that its not even and not a prime power, how do we actually manage to find a non-trivial square root of \(1 \ (\text{mod } N)\)?</p>
+	
+	
+	  <p>There doesn't seem to be a much more straightforward way to finding square roots of \(1 (\text{mod } N)\) besides just computing the modular squaring function \(f_N(x)=x^2 (\text{mod } N)\) for various \(x\) and checking if \(f_N(x) = 1\). However, here we encounter the same difficulty we faced previously when trying to randomly guess factors of \(N\). If \(N\) is really large and we are left to guessing, then there is just too many integers \(x\) we might have to guess before finding a nontrivial square root that satisfies \(f_N(x)=1\).</p>
+	
+	
+	  <p>To get a feel for the odds we are up against, let's take for example \(N = 221\). This is a fairly big number compared to the ones we have been examining in our plots thus far. It was quite convenient previously to have all the function values \(f_N(x)\) computed and displayed for us. So much so that it may have seemed obvious how to spot points where \(f_N(x)=1  (\text{mod } N)\).</p>
+	
+	
+	  <p>For now, let's  suppose we aren't so fortunate and don't have all this function information given to us. How are we to find a non trivial square root of \(1 \ (\text{mod } 221) \)?</p>
+	
+	
+	  <p>Try randomly guessing integers \(x\) to evaluate \(f_{221}(x)\) in the plot below in hopes of finding a non trivial square root of \(1 (\text{mod } 221)\).</p>
+	
+	
+
+	  <p><iframe src="Visuals/3.4/index.html" width = "520" height = "575"  > </iframe></p>
+	
+	  
+	
+	
+	  <p>For this particular number  \(N=221\), it just so happens that there are only two non-trivial square roots of \(1 (\text{mod } N)\) for us to find. That's not very many compared to how big \(221\) is.</p>
+	
+	
+	 <h4> Question: </h4>
+	
+	  <p>How many random guesses are required before expecting to guess an integer \(x\) in the range \(1\leq x\leq 220\) that is a nontrivial square root satisfying \(f_{221}(x)=1\)?</p>
+	
+	  <h4>Answers:</h4>
+	<p>**missing**</p>
+	
+	<div class="vspace"></div>
+	  <h4>Explanation:</h4>
+	  <p>**missing**</p>
+	</p>
+</section>
+
+<section>
+	
+	<p>
+	
+	  The two non-trivial square roots of \(1 \ (\text{mod } 221)\) happen to be \(x = 103\) and \(x = 118\). From these we can compute the respective greatest common divisors
+	  \[ gcd (x+1,221) \quad \text{and} \quad gcd(x - 1, 221)\]
+	  for either \(x=103\) or \(x=118\) to arrive at the factorization:
+	  \[ N = 13 \times 17.\]
+	
+	  <br>
+	
+	  In this case, \(221\) happens to be a semiprime number, which only has these two distinct odd prime factors.	
+	</p>
+	
+	
+	  <p><iframe src="Visuals/3.5/index.html" width = "520" height = "575" > </iframe></p>
+	
+
+	
+	
+	  <p>
+		  In general, when an odd integer \(N\) has \(P\) distinct prime factors, then there are precisely \(2P\) distinct square roots of \(1 \ (\text{mod } N)\). Two of these must be the trivial square roots, and if they exist, the rest are nontrivial square roots of \(1 \ (\text{mod } N)\). As mentioned previously, its only the odd prime-power case when
+		  \(N=p^k\) that nontrivial square roots do not exist, since \(N\) only has one distinct odd prime factor \(p\).
+	  </p>
+	
+	
+	  <p>After all this work developing our new strategy to find factors, if we again resort to a mere guessing game it seems this strategy is no better than our first approach of directly guessing factors of \(N\)! This is because there will typically be more nontrivial factors of \(N\) to possibly guess than nontrivial square roots of \(1 \ (\text{mod } N)\). Therefore, the odds of randomly guessing integers in the range \(0\leq x \leq N-1\) that satisfy \(f_N(x)=1\) will usually be worse than just trying to guess factors of \(N\) via trial division as we attempted in the first chapter.</p>
+	
+	
+	  <p>Let's not get too discouraged just yet. All this number theory we are utilizing will surely pay off! We are going to have to get even more clever in finding our desired nontrivial square roots of \(1 \ (\text{mod } N)\).</p>
+	
+</section>
+
+
+<section>
+	
+	<p>
+	  Let's take  quick step back and rethink what purpose our modular squaring function \(f_N(x) = x^2 (\text{mod } N)\) serves. As we already know, squaring a number \(x\) just means multiplying \(x\) by itself:
+	  \[x^2 = x\cdot x. \]
+	  In this sense, a square root of \(1 \ (\text{mod } N)\) is just an integer \(a\), which when multiplied by itself, gives us \(1 \ (\text{mod } N)\).
+	
+	  <br>
+	
+	  Instead, now we'll ask a different but closely related  question. If we are working modulo \(N\), then even though some integer \(a\) may not square to \(1 (\text{mod } N)\),
+	  \[a^2 \neq 1 (\text{mod } N),\]
+	  might it eventually equal \(1 (\text{mod } N)\) after being multiplied by itself enough times?
+	
+	  <br>
+	
+	  That is, does there exist an integer \(a\) and some other integer \(p\), such that after multiplying \(a\) by itself \(p\) times, is equal to \(1 \ (\text{mod } N)\):
+	
+	  \[a^p = a\cdot a \cdot \dots \cdot a = 1 \ (\text{mod } N) ? \]
+	  If so, how would these numbers help us in factoring \(N\)?
+	
+	  Well, suppose there does exist positive integers \(a\) and \(p\) such that
+	  \[ a^p = 1 \ (\text{mod } N).  \]
+	  Suppose further that \(p\) happens to be an even number so that \(\frac{p}{2}\) is an integer value, and consider the quantity
+	  \[z = a^{\frac{p}{2}}. \]
+	  </p>
+	
+	  <br>
+	
+	  <h3>Question:</h3>
+	
+	  <p>What must be true about \(z\)?</p>
+	
+	  <h4>Answers:</h4>
+	
+	  <ol>
+	 <li> \(z\equiv 0 (\text{mod } N) \)</li>
+	
+	 <li> \( z\equiv 1 (\text{mod } N) \) </li>
+	
+	<li> \(z^2\equiv 0 (\text{mod } N)\) </li>
+	
+	 <li>\( z^2\equiv 1 (\text{mod } N) \) </li>
+	  </ol>
+	
+	  <div class="vspace"></div>
+	  <h4>Explanation:</h4>
+	
+	  <p>
+		  If \(p\) is even, then the integer
+		  \[z=a^{\frac{p}{2}}\]
+		   is a square root of one modulo since
+		  \[z^2(\text{mod } N)=(a^{\frac{p}{2}})^2(\text{mod } N)=a^p(\text{mod } N)=1(\text{mod } N).\]
+	  </p>
+	
+</section>
+
+
+<section>
+	
+	<p>
+	  If we could find integers \(a\) and \(p\) satisfying
+	  \[a^p = 1 \ (\text{mod } N) \]
+	  and \(p\) happens to be even, then the quantity
+	  \[z =a^{\frac{p}{2}}\]
+	  must be a square root of \(1 \ (\text{mod } N)\). This is great, because then we can use \(z\) to help us find factors of \(N\) with the same strategy we have been developing here!
+	
+	  <br>
+	
+	  Now what we really need to ask is when do such integers \(a\) and \(p\) actually exist, and if they do how can we find them?
+	
+	  <br>
+	
+	  To answer this question, let's define a new function which captures this idea of repeatedly multiplying some number by itself. We'll refer to this as <b>modular exponentiation</b>:
+	  \[f_{a,N}(x):=a^x \ (\text{mod } N). \]
+	  Just as with the modular squaring function, these functions are also defined with a modulus parameter \(N\). However, to denote our choice of number to repeatedly multiply, these functions will have an additional parameter \(a\), which we'll refer to as the <b>base</b> of the modular exponentiation function.
+	
+	  <br>
+	
+	  Here, the function's argument \(x\) now serves as the exponent of \(a\), which denotes how many times the integer \(a\) is to be multiplied by itself. Defining the function in this way will allow us to see if there exists any integer \(p\) that satisfies
+	  \[f_{a,N}(p)= a^p (\text{mod } N) = 1.\]
+	
+	  <br>
+	
+	  Obviously, if \(a=1\) then \(f_N(x)=1\) for any \(x\), so we'll be ignoring that case. Moreover, since \(a^0=1\) for any base \(a\), we always get \(f_{a,N}(0)=1 (\text{mod } N)\) so we'll disregard \(x=0\) for our purposes and only consider positive integers.
+	
+	  </p>
+	  <br>
+	
+	  <p>An interactive plot of the modular exponentiation function \(f_{a,N}\) is shown below for the particular fixed value of \(N=15\). However, the choice of base, \(a\), can be varied to display the plots corresponding to the different functions \(f_{a,N}\).</p>
+	
+	  <br>
+	
+	  <p><iframe src="Visuals/3.6/index.html" width = "520" height = "525" > </iframe></p>
+	
+
+	
+	
+	
+	  <p>You may already be picking up on certain interesting patterns in the plots of \(f_{a,15}\) for various choices of \(a\).</p>
+	
+	
+	  <p>Indeed, there are  several values of \(a\) for which there exists a positive integer \(p\) such that \(f_{a,15}(p)= 1 (\text{mod } N) \), but this not true for all choices of the base \(a\). We'll study this distinction more closely in just a bit, but for now let's stay focused on the former case.</p>
+	
+	
+	  <p>
+		  When we have chosen a base \(a\) for which there does exist a positive integer \(p\) satisfying
+		  \[f_{a,15}(p) = 1 \ (\text{mod } N ), \]
+		  something interesting is happening!  Notice that the function exhibits a certain repeating pattern where  the function's values begin to repeat themselves every \(p\) integers. When it exists, we will refer to this positive integer \(p\) as the **period** of the function \(f_{a,N}\) and say the function has a **periodicity** of \(p\).
+	  </p>
+	
+	
+	  <p>The period \(p\) of our modular exponentiation function \(f_{a,N}\) will play a central and crucial role in our pursuit at factoring efficiently! For most of this course, our goal is to design both classical and quantum algorithms to find this precious period.</p>
+	
+	
+	  <h4>Question:</h4>
+	
+	  <p>Whenever the function \(f_{a,15}\) has a period of \(p\), which of the following relationships best captures this periodic behavior? Assume here that \(x\) is an arbitrary integer.</p>
+	
+	  <h4>Answers:</h4>
+	
+	  <ol>
+	<li>\(f_{a,15}(x)= f_{a,15}(x + p)\)</li>
+	
+	<li>\(f_{a,15}(p)= f_{a,15}(x + p)\)</li>
+	
+	<li>\(f_{a,15}(x)= f_{a,15}(\frac{x}{p})\)</li>
+	
+	<li>\(f_{a,15}(p)= f_{a,15}(\frac{p}{x})\)</li>
+	  </ol>
+	
+	  <div class="vspace"></div>
+	  <h4>Explanation:</h4>
+	
+	  <p>
+		  Since the period \(p\) satisfies
+		  \[f_{a,15}(p)=1 \ (\text{mod } N), \]
+		  then for any integer \(x\),
+		  \begin{align*}
+		  f_{a,15}(x+p)&=a^{(x+p)}(\text{mod } N) \\
+		  &=a^xa^p(\text{mod } N) \\
+		  &=a^x(\text{mod } N)\times a^p(\text{mod } N) \\
+		  &=a^{x}(\text{mod } N)\times 1 \\
+		  &=f_{a,15}(x).
+		  \end{align*}
+	  </p>
+	
+</section>
+
+<section>
+	
+	<p>
+	  In general for any \(N\), if the modular exponentiation function \(f_{a,N}\) has a period \(p\) then it eventually evaluates back to \[f_{a,N}(p)= 1 \ (\text{mod } N). \]
+	  This implies that the function's values will begin to repeat with a periodicity of \(p\).
+	
+	  <br>
+	
+	  This gives us another way to think about the period as the smallest positive integer \(p\) that satisfies
+	  \[f_{a,N}(x)=f_{a,N}(x + p), \]
+	  for any integer \(x\).
+	
+	  <br>
+	
+	  The periodic nature of modular exponentiation is an essential property that we'll leverage in our algorithms.
+	
+	  <br>
+	
+	  But first let's return again to the case \(N=15\) to understand precisely when the function \(f_{a,N}\) is periodic. As we observed, the period doesn't always exist!
+	
+	  <br>
+	
+	  Let's take another look at the same plots of \(f_{a,15}\).
+	</p>
+	  <br>
+	
+	  <p><iframe src="Visuals/3.6/index.html" width = "520" height = "525"  > </iframe></p>
+	
+	  
+	
+	  <p>
+		  Depending on our choice of base for modular exponentiation in the range \(1< a < 15\), the function \(f_{a,15}\) is periodic only when
+		  \[a = 2,4,7,8,11,13,14.  \]
+		  On the other hand, the function does not have a period when
+		  \[a = 3,5,6,9,10,12. \]
+		  Surely, there must be some relationship between \(a\) and \(N=15\) that characterizes this distinction.
+	  </p>
+	
+	
+	  <p>In fact, there is! It has something to do with the greatest common divisor of \(N=15\) and our choice of \(a\).</p>
+	
+	
+	  <h4>Question:</h4>
+	
+	  <p>True or false: the function \(f_{a,15}\) has a period only if \(gcd(a,15)=1\).</p>
+	
+	  <h4>Answers:</h4>
+	
+	<ol>
+	  <li>True</li>
+	  <li>False</li>
+	</ol>
+	
+	<div class="vspace"></div>
+	  <h4>Explanation:</h4>
+		<p>**missing**</p>
+
+</section>
+
+
+<section>
+	
+	  <p>The function \(f_{a,15}\) only has a period if \(gcd(a,15)=1\). This means that \(a\) and \(15\) are coprime and share no common factors besides the trivial \(1\).</p>
+	
+	
+	  <p>Otherwise, if \(gcd(a,15) > 1 \) implying that \(a\) and \(15\) do share a non trivial factor, then the function has no period.</p>
+	
+	
+	  <p>It turns out that this is true in general for any choice of \(a\) and \(N\) for the modular exponentiation function \(f_{a,N}\). The period  exists if and only if \(gcd(a,N)=1\).</p>
+	
+	
+	  <p>You can explore the modular exponentiation function \(f_{a,N}\) for various choices of both \(a\) and \(N\) in the figure below. When it exists, the period of the function is highlighted in the plot.</p>
+	
+	
+	  <p><iframe src="Visuals/3.7/index.html" width = "520" height = "525" > </iframe></p>
+	
+	  
+	  <p>Recall from the last chapter that our approach to factoring \(N\) was to guess some \(a\) and compute \(gcd(a,N)\). If \(gcd(a,N)=1\) then we don't get any any nontrivial factors, and hoping otherwise was foolish for hard numbers to factor.</p>
+	
+	
+	  <p>Now this is when our new strategy comes into play! Since the period of the modular exponentiation function \(f_{a,N}\) exists precisely when \(gcd(a,N)=1\), we can find the period to help us find factors of \(N\).</p>
+	
+	
+	  <p>In practice, for the really big numbers we need to factor it will almost always be the case that \(gcd(a,N)=1\) for random choices of \(a\), which assures us the period does indeed exist. Whenever it does, we can use our new approach to find factors! Besides, if \(gcd(a,N)\neq 1\) then we would have already found a common factor, and wouldn't even need to bother with our new approach.</p>
+	
+	
+	  <p>So now we finally have our main line of attack! To find factors of \(N\) all we have to do is choose a base \(a\) for which the modular exponentiation function has a well-defined period. Then once we find the period, we can use it to help us identity a non-trivial square root of \(1 \ (\text{mod } N)\), and then just quickly compute some greatest common divisors to find the factors!</p>
+	
+	
+	  <p>
+		  To be more specific, if \(p\) is the period of some particular function \(f_{a,N}\), then we can determine a square root of \(1 \ (\text{mod } N)\) given by
+		  \[z = a^{\frac{p}{2}}, \]
+		  and then compute
+		  \[A = gcd(z+1,N) \quad \text{and} \quad B = gcd(z-1,N) \]
+		  to get a factorization of \(N\) as
+		  \[N = A\times B. \]
+	  
+	  Now we're getting somewhere! But not so fast!</p>
+	
+	  <h4>Question:</h4>
+	
+	  <p>Suppose we have chosen a particular base \(a\) for which \(f_{a,N}\) has a well-defined period \(p\), and we've found it. How might our algorithm fail to give us non-trivial factors of \(N\)? Check all that apply:</p>
+	
+	  <h4>Answers:</h4>
+	<ol>
+	<li>The period \(p\) is not even.</li>
+	
+	<li>The period \(p\) is zero.</li>
+	
+	<li>\(a^{\frac{p}{2}}\) is a trivial square root of \(1 \ (\text{mod } N)\)</li>
+	
+	<li>\(a^{\frac{p}{2}} = 1 \) </li>
+	</ol>
+	
+	<div class="vspace"></div>
+	
+	<h4>Explanation:</h4>
+	
+	<p>A and C</p>
+	
+	
+</section>
+
+
+<section>
+	
+	  <p>Once we have managed to find the period \(p\) of the function \(f_{a,N}\), there are only two things we have to check in order to successfully obtain non-trivial factors of \(N\).</p>
+	
+	
+	  <p>First of all, in terms of the period, what we are really betting on is for the quantity \(z=a^{\frac{p}{2}}\) to be a square root of \(1 \ (\text{mod } N)\), which by definition is an integer quantity.  If the period \(p\) is not an even number, then \(\frac{p}{2}\) is not an integer quantity and so \(z=a^{\frac{p}{2}}\) may not be either!  Otherwise, when the period does happen to be an even number, then \(z=a^{\frac{p}{2}}\) is guaranteed to be a square root of \(1 \ (\text{mod } N)\)!</p>
+	
+	
+	  <p>Moreover, in order to ensure that we get non-trivial factors of \(N\), we need \(z=a^{\frac{p}{2}}\) to be a non-trivial square root of \(1 \ (\text{mod } N)\). This just means that \(z\) can't be equal to \(1 \ (\text{mod } N)\) or \(N-1 \ (\text{mod } N)\). Otherwise, we would only get trivial factors of \(N\).</p>
+	
+	
+	  <p>To summarize, we can always find nontrivial factors of an odd number \(N\) provided the period \(p\) of the modular exponentiation function \(f_{a,N}\) satisfies two things:</p>
+	
+	
+	 <ul>
+		  <li> <p>\(p\) is even</p> </li>
+		  <li> <p>\(a^{\frac{p}{2}} \neq 1 \ (\text{mod } N)\) and \(a^{\frac{p}{2}} \neq N-1 \ (\text{mod } N)\) </p></li>
+	</ul>
+	
+	
+	
+	  <p>How worried should we be about finding a period which satisfies these constraints? Fortunately, not much at all! It turns out to be fairly common for the period to satisfy these conditions, regardless of how big \(N\) may be! If we did happen  to choose a base \(a\) for the function \(f_{a,N}\) and realize that its period doesn't meet our two criterion, we just have to pick another base \(a\) and try again.</p>
+	
+	
+	  <p>By the way the odds work out, we will have at least a 50% chance at finding our factors after choosing some base for modular exponentiation and testing it's period for these criterion. In particular, these odds grow in our favor  the more factors \(N\) may have.</p>
+	
+	
+	
+	  <p>This is what makes this factoring algorithm so remarkable. We've managed to game the chances of finding factors of \(N\) in our favor! Now we just guess a random integer \(a\) and determine the period of the function \(f_{a,N}\). With high probability all the necessary conditions on our period will be met to allow us to find non-trivial factors of \(N\).</p>
+	
+	
+	  <!--
+	  <p>**insert plot for some fixed N where a can vary**</p>
+		-->
+
+		<div>
+			<a href="chapter4.html">Next: Chapter 4 </a>
+			<br>
+			<a href="index.html">Contents</a>
+		</div>
+	
+
+</section>
+
+
+
+
+	</div>
+	</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script src="../plugin/math/math.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				history: true,
+				//transition: 'linear',
+				hash: true,
+				//disableLayout: false,
+
+				// slide numbering
+				slideNumber: 'c/t',
+
+
+				// The "normal" size of the presentation, aspect ratio will
+  				// be preserved when the presentation is scaled to fit different
+  				// resolutions. Can be specified using percentage units.
+  				width: 960,
+  				height: 800,
+
+  				// Factor of the display size that should remain empty around
+  				// the content
+  				margin: 0.04,
+
+  				// Bounds for smallest/largest possible scale to apply to content
+  				minScale: 0.2,
+  				maxScale: 2.0,
+
+				math: {
+					mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+					config: 'TeX-AMS_HTML-full',
+					TeX: {
+						Macros: {
+							R: '\\mathbb{R}',
+							set: [ '\\left\\{#1 \\; ; \\; #2\\right\\}', 2 ]
+						}
+					}
+				},
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath ]
+			});
+		</script>
+	</body>
+</html>

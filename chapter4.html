@@ -1,0 +1,829 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Shor's Algorithm Ch. 4</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+
+		<link rel="stylesheet" href="dist/theme/white.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<style>
+			.reveal section {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+				background-color: white;
+			}
+			.div_bg {
+				background-color: white;
+			}
+			.vspace {
+				height: 5em
+			}
+			.slide_scroll {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+			}
+			.reveal section p {
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			
+		  }
+		  .reveal section ol {
+			
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			list-style-type: upper-alpha;
+			margin-bottom: 1em;
+		  }
+
+		  .reveal section iframe {
+			box-sizing: border-box;
+			display: flex; 
+			align-items: center; 
+			justify-content: center; 
+			border: 0px solid; 
+			margin: 0em 0; 
+			padding: 0em; 
+			background-color: white 
+		  }
+		</style>
+		<div class="reveal">
+			<div class="slides">
+			
+<section>
+	<h3>Shor's Algorithm</h3>
+	<hr>
+	<h4>Chapter 4</h4>
+	<h4>Classical Period Finding</h4>
+
+	<div style=" position: absolute;
+	bottom: 0px;">
+		<a href="index.html">Contents</a>
+	</div>
+</section>
+
+
+ 
+<section>
+	
+	
+	
+	<p>In the previous chapter, we learned how a solution to the period finding problem can be used to find a solution to the factoring problem!</p>
+	
+	
+	<p>
+		To recap, recall that the period \(p\) characterizes the periodic behavior of the modular exponentiation function
+		\[f_{a,N}(x) = a^x \ (\text{mod } N),  \]
+		which describes the action of repeatedly multiplying some number \(a\) by itself and reducing the quantity modulo \(N\). In this context, \(N\) is the number we want to factor which sets the modulus of the function, and the period \(p\) is the smallest positive integer that satisfies
+		\[f_{a,N}(p) = 1 \ (\text{mod } N).\]
+	</p>
+	
+	
+	<p>The remarkable thing about this reduction is that an efficient algorithm for period finding leads to an efficient algorithm for factoring! In particular, once we have found the period of the function \(f_{a,N}\), its quick and easy to obtain the factors of \(N\) with a classical computer all thanks to the Euclidean algorithm. No quantum computer necessary, right?</p>
+	
+	
+	<p>For this reduction to really be worthwhile though, we need a way to actually find the function's period. If we can't manage to do that efficiently, then we can't expect to efficiently come up with the factors using this method either!</p>
+	
+	<p>In this chapter, we'll develop some classical algorithms and understand what it really takes to solve the period finding problem in this setting. As we'll see, when the number \(N\) to factor is really big, finding the function's period limited only to classical algorithms may not be so efficient in practice. Regardless, in this chapter we will pick up some valuable insights for period finding that we will leverage later in the course for Shor's quantum algorithm for period finding.</p>
+
+</section>
+
+
+<section>
+	
+	
+	
+	<p>Before we get going, let's first review some formalities regarding the  modular exponentiation function
+	\[f_{a,N}(x) = a^x \ (\text{mod } N),\]
+	and understand why finding it's period may not be so easy in practice.
+	</p>
+	
+	<p>First of all, depending on our choice of function parameters described by the base \(a\) and modulus \(N\), the period may not even exist! As we realized in the previous chapter, the function \(f_{a,N}\) has a  period only if \(gcd(a,N)=1\). This happens  only when \(a\) and \(N\) are coprime, meaning they share no common factors. Otherwise, if \(gcd(a,N)> 1\), there is no well-defined period. Therefore, whenever we speak of the period of \(f_{a,N}\), we'll assume  we are working in a situation where \(a\) and \(N\) are coprime.</p>
+	
+	
+	<p>For example, plots of the function \(f_{a,21}\) are shown in the figure below for the particular case of \(N=21\), but the base parameter \(a\) can be varied.  To highlight the periodic behavior of \(f_{a,N}\) whenever it exists, all points that evaluate to  \(1 \ (\text{mod } N)\) are shown in red. The period is the smallest positive integer for which this is true. For now, we'll only consider plotting the function \(f_{a,N}\) over the range \(0\leq x \leq N-1\).</p>
+	
+	
+	<p><iframe src="Visuals/4.1/index.html" width = "520" height = "525" > </iframe></p>
+	
+	
+	
+	<p>So what makes finding this period so hard to begin with? Of course, computing a single value \(f_{a,N}(x)\) for some \(x\) is easy and can be done efficiently. If we had all the function's values for the range \(0\leq x \leq N-1\) computed for us like in the plots shown here, we can just simply take a look at them and easily identity the period. No big deal, right? Well actually, this much function data may be too much to ask for in practice when \(N\) is really large!</p>
+	
+	
+	<h4>Question:</h4>
+	
+	<p>Suppose \(N\) is some \(n\) digit number. In terms of \(n\), how many function evaluations might be needed to determine \(f_{a,N}(x)\) for all input integers in the range \(0\leq x < N\)?</p>
+	
+	<h4>Answers:</h4>
+	
+	<ol>
+	<li>\(O(n)\)</li>
+	
+	<li>\(O(10^n)\)</li>
+	
+	<li>\(O(log(n))\)</li>
+	</ol>
+
+	<div class="vspace"></div>
+	
+	<h4>Explanation: </h4>
+	
+	<p>\(O(10^n).\)</p>
+	
+</section>
+
+
+<section>
+	
+		<p>
+		The problematic thing here is having to compute the function \(f_{a,N}(x)\)  for every integer in the range \(0\leq x \leq N - 1\), which quickly becomes an intractable task when \(N\) is large! Remember, if \(N\) is some \(n\) digit number, then it could be as big as \(N \sim 10^n\), which is exponential in the number of its digits. This in turn would mean having to evaluate \(f_{a,N}(x)\) on an exponentially large number of inputs in order to obtain a complete description of the function over the range \(1\leq x\leq N\).
+		</p>
+	
+	
+		<p>To get a sense of the scale we are up against, a \(100\)-digit number \(N\) could require up to \(10^{100}\) function evaluations. That's more than estimates of the number of atoms in the universe and so we couldn't even possibly write down all that data!</p>
+	
+	
+		<p>So even though computing a single evaluation \(f_{a,N}(x)\) is easy to do, computing the function an exponential number of times may not be so efficient in practice. Alas, hoping for that much function data quickly becomes too demanding!</p>
+	
+	
+		<p>If our goal is to come up with an efficient algorithm that does not require an exponential number of steps, we are going to have to try to make do with less.</p>
+	
+	
+		<p>In order to be more resourceful and understand what it takes to find the function's period, we'll think of our ability to make queries to the function as a computational resource. In this context, making a single classical query to the function just means choosing an input value \(x\), and being provided with the particular function value \(f_{a,N}(x)\).</p>
+	
+	
+		<p>Our goal then is to come up with algorithms that find the function's period by making as few queries to the function as possible, and hopefully not exponentially many!</p>
+</section>
+
+
+<section>
+	
+	
+	<p>Now you may already be thinking of one fairly obvious period finding strategy. Just because \(N\) might be really big, that doesn't necessarily mean the period has to be!</p>
+	
+	
+	<p>
+		After all, the period \(p\) of the function \(f_{a,N}\) is defined to be the smallest positive integer such that
+		\[ f_{a,N}(p) = 1 \ (\text{mod } N). \]
+	</p>
+	
+	
+	<p>This naturally lends itself  to the following strategy. Just start with \(x=1\) and query \(f_{a,N}(x)\) for consecutive integers until we eventually observe the value \(f_{a,N}(p)=1\). By definition, this value must be the period! The nice thing about this rather straight-forward strategy is that we are guaranteed to find the period after exactly \(p\) queries to the function.</p>
+	
+	
+	<p>
+		For example, consider finding the period of the function
+		\[f_{70,299}(x) = 70^x \ (\text{mod } 299) \]
+		using this strategy. We would start by querying the function at \(x=1\) and continue to get the first few values:
+		</p>
+	
+		<p>
+			\begin{align*}
+			f_{70,299}(1) &= 70^1 \ (\text{mod } 299) = 70 , \\
+			f_{70,299}(2) &= 70^2 \ (\text{mod } 299) = 116 , \\
+			f_{70,299}(3) &= 70^3 \ (\text{mod } 299) = 47 ,
+			\end{align*}
+	</p>
+	<p>until all of a sudden
+	\[f_{70,299}(4) = 70^4 \ (\text{mod } 299) = 1,  \]
+	and so we conclude the function has a period of \(p=4\). That was quick! Despite \(N=299\) being fairly large, it only took four function queries to \(f_{a,N}\) to find the period.
+	</p>
+	
+	
+	<p>But wait, not so fast! Sure its possible that the period of the function \(f_{a,N}\) might not be so big for some choice of base \(a\) and \(N\), but that's not always the case.</p>
+	
+	
+	<p>Suppose instead we choose our base for modular exponentiation to be \(a=2\) and we try to find the period of \(f_{2,299}\) using this strategy. In the figure below, you can give this algorithm a go with the "Start" button, and watch successive function queries to \(f_{2,299}\) be made until the period is found. If you are not feeling so patient, or just can't handle the anticipation, don't feel obligated to sit through this! Feel free to reveal the period with the "Show" button.</p>
+	
+	
+	<p><iframe src="Visuals/4.2/index.html" width = "520" height = "575" > </iframe></p>
+	
+	
+	
+	<p>In this case, the period of \(f_{2,299}\) happens to be \(p=132\), which is much larger than the previous case we considered where the function had a period of \(p=4\). These two examples are meant to illustrate how the period of the function \(f_{a,N}\) can vary quite drastically in size for a given \(N\) depending on the choice of base \(a\).</p>
+	
+	
+	<p>Although this period finding algorithm is quick in some cases, it may not be so efficient when \(N\) is really large. The catch here is that, in general, the period \(p\) could be nearly as big as \(N\). Since its hard to predict how big or small the period of the function may be, our period finding algorithms have to be able to efficiently handle any scenario! In our pursuits at period finding, we won't be making any gratuitous assumptions on the function's period  hoping for it to be small. The only constraint on the period we will have is pretty loose, \(p < N\). So all we know is that the period will never be greater than \(N\).</p>
+	
+	
+	<p>Therefore, we better be equipped to handle situations when the period itself is exponentially large in the number of digits of \(N\), since in that case this approach could need an exponential number of function queries to finally arrive at the period. So when \(N\) itself is large, this strategy may not be any quicker than our methods from the previous chapters.</p>
+	
+</section>
+
+
+<section>
+	
+	
+	<p>In an attempt to come up with a better strategy for period finding using fewer queries than the deterministic strategy we just tried, let's now try making random queries to the function instead and see what our chances are at being successful.</p>
+	
+	
+	<p>A "random function query" is really just a fancy way of saying "make a guess"! To make a random query to the function \(f_{a,N}\), we first choose a random input \(x\), and then query the function with that choice \(f_{a,N}(x)\).</p>
+	
+	
+	<p>For our purposes here, when we choose a random integer \(x\), we'll be choosing one uniformly at random from the range \(1\leq x \leq N\). That is, each \(x\) in the range is equally as likely to be chosen with the same probability of \(\frac{1}{N}\).</p>
+	
+	
+	<p>In the figure below, you can get a feel for whats it like to make random function queries to the particular function \(f_{2,21}\) using the "Random Query" button. For each query, the corresponding function value is plotted in the graph. If you happen to query the value corresponding to the function's period, you'll see the point displayed in red.</p>
+	
+	
+	<p><iframe src="Visuals/4.3/index.html" width = "520" height = "525"  > </iframe></p>
+	
+
+	
+	<p>By utilizing random queries for our task at hand we are entering the domain of probabilistic algorithms. In this setting, our algorithms are no longer guaranteed to find the period. Instead, we have to deal with a chance of success and failure. Therefore, to properly reason about these strategies we'll have to analyse them in terms of the number of queries or guesses we may have to make in order to expect the algorithm to have a decent chance at success.</p>
+	
+	
+	<p>
+		As a start, imagine getting lucky and correctly guessing the period with a single random function query to
+		\(f_{a,N}\). What are the chances?
+		Since the period \(p\) of the function \(f_{a,N}\) is the single unique integer in the range \(1\leq x \leq N\) that satisfies its defining properties, the probability of choosing a random \(x\) that happens to be the period is given by \(\frac{1}{N}\).
+	</p>
+	
+	
+	<p>With only a \(\frac{1}{N}\) chance at correctly guessing the period with a single query, we would have to make on the order of \(N\) random queries in hopes of expecting any success! As we know, that could require an exponential number of queries. So in practice, when \(N\) is really big, the chances of randomly stumbling across the period in this way are really slim!</p>
+	
+	
+	<p>Regardless, imagine we do go ahead and just resort to randomly querying the function \(f_{a,N}(x)\) hoping we get lucky and find an \(x\) such that \(f_{a,N}(x) = 1 (\text{mod } N)\). As you may have already noticed, the period \(p\) may not be the only integer in the range \(0\leq x\leq N-1\) which evaluates to \(f_{a,N}(x) = 1 (\text{mod } N)\). So how can we be sure we found the true period?</p>
+	
+	
+	<p>Try making random queries to the function \(f_{2,21}\) again in the figure below. This time however, any queried point corresponding to the value \(f_{2,21}= 1 \ (\text{mod } N)\) will be shown in red.</p>
+	
+	
+	<p><iframe src="Visuals/4.4/index.html" width = "520" height = "525" > </iframe></p>
+	
+	
+	
+		<h4>Question:</h4>
+	
+		<p>In terms of the period \(p\), what integers \(x\) can evaluate to \(f_{a,N}(x) = 1 (\text{mod } N)\)?</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+			<li> \(x = p\) </li>
+			<li> \(x = jp\)  for any integer \(j\) </li>
+			<li> \(x = j + p\)  for any integer \(j\) </li>
+		</ol>
+
+		<div class="vspace"></div>
+	
+		<h3>Explanation:</h3>
+	
+		<p>
+			Since the period \(p\) satisfies \(f_{a,N}(p) = 1 (\text{mod } N) \), this implies that any integer \(x\) that is a multiple of \(p\) of the form \(x = jp \) for some integer \(j\), must also satisfy
+			\[\begin{align*}
+			f_{a,N}(x) &= f_{a,N}(jp) \\
+			&= a^{jp} (\text{mod } N) \\
+			&= (a^p)^j (\text{mod } N) \\
+			&= 1^j (\text{mod } N) \\
+			&= 1 (\text{mod } N).
+			\end{align*}\]
+		</p>
+	
+	
+</section>
+
+
+<section>
+	
+	
+	<p>
+		Even if we do happen to randomly find input values $x$ that satisfy $f_{a,N}(x)=1$, we are not guaranteed to have found the true period. All we really get is information in the form of multiples of the period,
+		\[x=jp \quad \text{for some integer} \  j,\]
+		since any of these multiples evaluate to
+		\[f_{a,N}(jp)= 1 \ (\text{mod } N). \]
+	</p>
+	
+	<p>Returning to our example, the figure below shows the full plot of the function \(f_{2,21}\), but now any points that correspond to the value \(f_{a,N}(x)= 1 \ (\text{mod } N)\) are shown in red.</p>
+	
+	
+	<p><iframe src="Visuals/4.5/index.html" width = "520" height = "525"  > </iframe></p>
+	
+	
+	
+	
+	
+	<p>This complicates matters since, in addition to not knowing the period $p$ to begin with, we also don't know what particular multiple corresponding to the integer \(j\) happened to evaluate to $f_{a,N}(x)=1$. This makes the information about the period in this form a bit ambiguous, especially with knowledge of only a single multiple of (p\).</p>
+	
+	
+	<p>Despite this ambiguity, there's is still a fair chance for us to infer the period from this information! If we did somehow manage to obtain several different unknown multiples of the period disguised as integers, then we should compare them somehow in hopes of making a better informed guess at the period.</p>
+	
+	
+	<p>
+		Given two  multiples of the period, say,
+		\[x_1 = j_1p \quad \text{and} \quad x_2=j_2p  \]
+		corresponding to two unknown integers \(j_1\) and \(j_2\), the strategy we'll use in order to infer the period \(p\) will be to calculate \(gcd(x_1,x_2)\), the greatest common divisor of \(x_1\) and \(x_2\).
+	</p>
+	
+	
+	<p>
+		To understand why, recall from a previous chapter the useful fact we learned which relates the greatest common divisor of two multiples of some number as
+		
+		\[gcd(j_1p,j_2p) = gcd(j_1,j_2) \cdot p. \]
+		
+		In this way, we might be able to determine the period by simply calculating the greatest common divisor of our two multiples \(x_1\) and \(x_2\). Although not always, it may be possible that \(gcd(x_1,x_2)\) is the period!
+	</p>
+	
+	
+	
+	<h4>Question:</h4>
+	
+	<p>If \(x_1=j_1p\) and \(x_2=j_2p\) are two multiples of the period \(p\), then what would need to be true about the integers \(j_1\) and \(j_2\) in order for \(gcd(x_1,x_2) = p\)?</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+			<li> \(gcd(j_1,j_2)= 1 \) </li>
+			<li> \(gcd(j_1,j_2) > 1 \) </li>
+			<li> \(gcd(j_1,j_2)= p \) </li>
+		</ol>
+	
+		<div class="vspace"></div>
+		<h4>Explanation:</h4>
+		<p>**missing**</p>
+	
+	
+</section>
+
+<section>
+	
+	
+	<p>
+	In our period finding pursuits, having knowledge of only multiples of the period is still very valuable information! If we possess two multiples \(x_1=j_1p\) and \(x_2=j_2p\), and it happens to be the case that
+	\[gcd(j_1,j_2) = 1, \]
+	then the period must be the greatest common divisor of the multiples:
+	\[gcd(x_1,x_2) =gcd(j_1p,j_2p)=gcd(j_1,j_2)\cdot p = p. \]
+	Otherwise, if \(gcd(j_1,j_2) > 1\), then the quantity \(gcd(x_1,x_2)\) is merely a multiple of \(p\) and so our algorithm fails.
+	</p>
+	
+	<p>So for this algorithm to succeed, what we are really betting on is for the two integers \(j_1\) and \(j_2\) that determine our two multiples of the period, \(x_1=j_1p\) and \(x_2=j_2p\), to be coprime: \(gcd(j_1,j_2)=1\). Whenever this is the case, our algorithm will succeed at finding the true period. Although this approach is not guaranteed to succeed, the odds are actually in our favor!</p>
+	
+	
+	<p>
+		Again, recall from a previous chapter that the probability for two random integers to be coprime is bounded below by a constant. This probabilistic fact has some really nice implications for us!  In particular, the probability for \(j_1\) and \(j_2\) to be coprime is at least
+		\[Prob[gcd(j_1,j_2)=1] \geq \frac{6}{\pi^2}\approx .61 \]
+		Consequently, the probability that we succeed at finding the period given two random multiples is also at least \(\approx .61\). That's not bad at all! We could expect success at least once by comparing just two different pairs of multiples of the period!
+	</p>
+	
+	
+	<p>You can get a statistical feel for this result in the figure below by using the "Random Pair" button to generate two random multiples of \(5\) in the range \(0\leq x \leq 100\). For every pair of multiples a test is performed to check if the greatest common divisor of the multiples is equal to \(5\). If so, the test is successfully passed, and otherwise the test fails. By performing this test many times with different random pairs you can observe the relative number of success/fail test results. Notice that the number of successful trials tends to about \(61\%\).</p>
+	
+	
+	<p><iframe src="Visuals/4.6/index.html" width = "520" height = "325"  > </iframe></p>
+	
+	
+	
+	
+	<p>The noteworthy thing about this algorithm's success probability is that its always at least some constant value, \(\approx 61\%\), regardless of how big \(N\) or the period \(p\) is. Unlike our previous algorithms, this algorithm's success probability doesn't get worse as \(N\) or the number of its digits gets bigger! In essence, this is the main practical significance of probabilistic algorithms which have a **constant** success probability.</p>
+	
+	
+	<p>Don't believe it? See it for yourself by testing the statistics again in the figure below, but now we'll increase our range from \(N=100\) to \(N=1000\). This time we'll randomly select multiples of \(40\) and test whether or not the greatest common divisor of the multiples is \(40\). Again, after enough trials the number off successful trials will tend to about \(61\%\).</p>
+	
+	
+	<p><iframe src="Visuals/4.6.1/index.html" width = "520" height = "325" > </iframe></p>
+	
+
+</section>
+
+
+
+<section>
+	
+	<p>Thus far we only considered a single pair of multiples of the period in an attempt to infer the period. Of course, our chances would only get better if we had even more multiples of the period to work with. Statistically, with this approach we would expect to need just a few  different multiples of the period to successfully obtain the true period! So even if some pair of multiples \(x_1\) and \(x_2\) don't lead us to the period, all we have to do is find a few more to have a high chance at success.</p>
+	
+	<div style="text-align: center;">
+		<div style="display: inline-block; text-align: left;">
+	<p>We can summarize this period finding algorithm as follows.</p>	
+	<br>
+	<p>
+		<b>Step 1:</b> Obtain a few multiples of the period,
+
+		\[ MULTIPLES = \{x_1, x_2, x_3, \dots \}  \]
+	</p>
+	
+	
+	<p>
+		<b>Step 2:</b> Compute the greatest common divisor between each pair of multiples, and consider the minimum \(\hat{p}\) as a candidate for the period:
+		
+		\[ \hat{p} = \underset{x_i,x_j}{\text{min}} \ gcd(x_i, x_j) \]
+	</p>
+	</div>
+	</div>
+	
+	<p>Once again we have the Euclidean algorithm to thank for efficiently computing the greatest common divisors in the second step of this algorithm.  But we first need to somehow obtain these multiples of the period. Who is going to do that?</p>
+	
+	
+	<p>For this whole period finding algorithm to be efficient we need a quick way to actually obtain these precious multiples of the period. We already realized one way to get them is to find integers \(x\) such that \(f_{a,N}(x)= 1 \ (\text{mod } N)\), but this gets impractical fast if we resort to random function queries. Fortunately, there is a way to increase our chances at finding multiples of the period. Let's see how we can do better!</p>
+	
+</section>
+
+<section>
+	
+	
+	<p>Surely there ought to be some more structure in the modular exponentiation function that we can exploit in hopes of finding the period. It's worth taking a moment to get more acquainted with the function \(f_{a,N}\) and its periodic behavior. If we can understand the function's essential structure, then we can leverage that knowledge to inform our strategies for finding the period.</p>
+	
+	
+	<p>
+		Recall that the periodic nature of the function \(f_{a,N}\) can be characterized through the following relation
+		\[f_{a,N}(x+p)=f_{a,N}(x).\]
+		Here, \(x\) is an arbitrary integer and the period \(p\) is the smallest such integer for which this relation holds. Moreover, the function repeats every multiple of \(p\):
+		\[f_{a,N}(x)=f_{a,N}(x+p)=f_{a,N}(x+2p)=f_{a,N}(x+3p) =\dots,\]
+		which we can succinctly express as
+		\[f_{a,N}(x) = f_{a,N}(x + jp), \quad \text{for any integer } j. \]
+	</p>
+	
+	
+	<p>
+		We can be a bit more specific in describing the function's periodic structure if we make one important observation. Note the first \(p\) values of the function,
+		\[f_{a,N}(0), \ f_{a,N}(1), \  f_{a,N}(2), \ \dots \ f_{a,N}(p-1), \]
+		are all distinct. These first \(p\) values essentially determine the entire function since it's values repeat with a periodicity of \(p\).
+	</p>
+	
+	
+	<p>Consequently, for any integer \(x\), there always exists some integer \(s\) in the range \(0\leq s < p\) such that \(f_{a,N}(x)=f_{a,N}(s)\).</p>
+	
+	
+	<p>Shown below is another plot of \(f_{2,21}\), which has a period of \(p=6\), where you can select an integer in the range \(0\leq s \leq 5 \) and all points sharing the same value \(f_{2,21}(s)\) are displayed in red.</p>
+	
+	
+	<p><iframe src="Visuals/4.7/index.html" width = "520" height = "525"  > </iframe></p>
+	
+
+	
+		<h4>Question:</h4>
+	
+		<p>Suppose \(f_{a,N}(x)=f_{a,N}(s)\) for some \(s\) in the range \(0 \leq s \leq p-1\). Using modular arithmetic, how can we describe the integer \(x\) in terms of \(s\) and \(p\)? Remember, by definition \(a = b (\text{mod } M)\) just means that \(a = jM + b\) for some integer \(j\).</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+			<li> \(x = s (\text{mod } p)\) </li>
+			<li> \(x = p (\text{mod } s)\) </li>
+		</ol>
+	
+		<div class="vspace"></div>
+		<h4>Explanation:</h4>
+	
+		<p>\(x = s (\text{mod } p)\)</p>
+	
+</section>
+
+<section>
+	
+	
+	<p>
+		The periodic behavior of the function \(f_{a,N}\) implies that, if \(f_{a,N}(x)=f_{a,N}(s)\) then \(x= s (\text{mod } p)\). By definition, the relation \(x = s (\text{mod } p)\) just means that \(x = jp +s\) for some integer \(j\); or equivalently, that \(x\) and \(s\) differ by a multiple of \(p\):
+		\[|x - s| = jp.\]
+	</p>
+	
+	
+	<p>Note, for convenience here we take the absolute value of the difference \(|x - s|\) so we only consider positive multiples of the period.</p>
+	
+	
+	<p>
+		This implies that whenever we know two integers \(x\) and \(y\) whose function values match, \(f_{a,N}(x)=f_{a,N}(y)\),  then we also know the difference \(|x - y| \) is a multiple of the period \(p\). Logically, this implication goes both ways:
+		\[f_{a,N}(x)=f_{a,N}(y) \quad \text{if and only if} \quad |x - y| = jp. \]
+		We can think of this mathematical fact as a promise that's always fulfilled by the modular exponentiation function \(f_{a,N}\) due to its periodic nature. In our attempts at finding the function's period it'll be in our best interest to utilise this characterizing insight whenever we can -- not just here in this classical setting, but also when we make our way into the quantum realm.
+	</p>
+	
+	
+	<p>
+		For our purposes now, this gives us a more general way to find multiples of the period than only looking for queries for which \(f_{a,N}(x) = 1 \ (\text{mod } N)\). Now as we make random function queries to \(f_{a,N}\) we keep an eye out for any function matches,
+		\[ f_{a,N}(x)=f_{a,N}(y), \]
+		for any two integers \(x\) and \(y\). Whenever we find a match, then we just compute the difference  of \(x\) and \(y\) to get a multiple of the period:
+		\[|x - y| = jp. \]
+	</p>
+	
+	
+	<p>You can give this algorithm a go in the figure below where you can make random queries to the function \(f_{2,21}\). Whenever a new query's value matches any previous query, a line between the matched points is displayed indicating the corresponding multiple of the period. All the distinct multiples obtained in this way are collected and a candidate for the period is determined by taking the smallest greatest common divisor between the multiples.</p>
+	
+	
+	<p>How many queries does it take you to find enough function matches to correctly infer the period?</p>
+	
+	
+	<p><iframe src="Visuals/4.8/index.html" width = "520" height = "575"  > </iframe></p>
+	
+
+	
+	<p>In this case it doesn't take very many random function queries to gather enough multiples to find the period. The number \(N=21\) is pretty small after all, and so the chances of randomly finding function matches after just several queries aren't so bad.</p>
+	
+	
+	<p>To really see how good this algorithm fairs in general, we need to put on our probability hats and analyse the likelihood of finding function matches with random queries and then figure out how many random queries we should expect to make.</p>
+	
+</section>
+
+
+<section>
+	
+		<p>In order to calculate our algorithm's success probability we need to first determine the chances of randomly querying a function match. To figure this out, let's start by calculating how many input values in the range \(0\leq x \leq N-1\) evaluate to a particular value \(f_{a,N}(s)\).</p>
+	
+	
+		<p>This quantity will generally depend on both \(N\) and the period of the function \(f_{a,N}\). For the sake of argument, suppose that the period \(p\) happens to divide \(N\). This simplifying assumption just means that the function completes a whole number of repetitions in the range \(0\leq x \leq N-1\), and so each of the function's values in the range \(0\leq x \leq N-1\) appear equally as often.</p>
+	
+	<!--
+		** maybe insert a plot for \(f_{a,N}\) for which \(p\) divides \(M\) **
+	-->
+	
+	
+		<h4>Question:</h4>
+	
+		<p>In terms of \(N\) and \(p\), how many integers in the range \(0\leq x \leq N-1\) evaluate to \(f_{a,N}(s)\) for some particular value in the range\(0\leq s \leq p-1\)?</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+			<li> \(p\) </li>
+			<li> \(pN \) </li>
+			<li> \(\frac{N}{p}\) </li>
+			<li> \(\frac{p}{N}\) </li>
+		</ol>
+	
+	<div class="vspace"></div>
+		<h4>Explanation:</h4>
+	
+		<p>If \(p\) divides \(N\), there are precisely \(\frac{N}{p}\) integers that evaluate to some value \(f_{a,N}(s)\).</p>
+	
+</section>
+
+
+<section>
+	
+	
+	<p>When the period \(p\) of the function \(f_{a,N}\) happens to divide \(N\), then the function completes exactly \(\frac{N}{p}\) repetitions in the range \(0\leq x \leq N-1\). Since each value \(f_{a,N}(s)\) occurs precisely once per repetition, the total number of distinct integers in the range \(0\leq x \leq N-1\) that evaluate to \(f_{a,N}(s)\) is \(\frac{N}{p}\).</p>
+	
+	
+	<p>Otherwise, if \(p\) does not divide \(N\) then the function gets cut short from completing a whole number of repetitions in the range \(0\leq x \leq N-1\).  This results in some function values appearing more often than others, but only once more.</p>
+	
+	
+	<p>We'll think about this latter scenario is just a bit, but for now let's continue to assume the period \(p\) divides \(N\).</p>
+	
+	
+		<h4>Question:</h4>
+	
+		<p>What is the probability that a random function query to \(f_{a,N}\) evaluates to some particular value \(f_{a,N}(s)\)? Remember, every time we make a random query to \(f_{a,N}\) each input integer in the range \(0\leq x \leq N-1\) is equally likely to be chosen with a probability of \(\frac{1}{N}\).</p>
+	
+	
+		<ol>
+			<li>\(\frac{1}{N} \) </li>
+			<li>\(\frac{1}{p}\) </li>
+			<li>\(\frac{p}{N}\) </li>
+			<li>\(\frac{N}{p}\) </li>
+		</ol>
+
+		<div class="vspace"></div>
+	
+		<h4>Explanation:</h4>
+	
+		<p>
+			When \(p\) divides \(N\), there are \(\frac{N}{p}\) distinct integers in the range \(0\leq x \leq N-1 \) that evaluate to \(f_{a,N}(s)\). Since each one of these  integers is randomly chosen with a probability of \(\frac{1}{N}\), the probability of randomly choosing any one of these \(\frac{N}{p}\) integers is given by
+				\[Prob[f_{a,N}(x)=f_{a,N}(s)] = \frac{N}{p}\frac{1}{N} =  \frac{1}{p}\]
+		</p>
+	
+	
+</section>
+
+
+<section>
+	
+	
+			<p>
+				What we have just determined is the probability
+				\[Prob[f_{a,N}(x)=f_{a,N}(s)] =\frac{1}{p}\]
+				that a random function query to \(f_{a,N}\) over the range \(0\leq x \leq N-1\) satisfies \(f_{a,N}(x)= f_{a,N}(s)\) for some particular value of \(s\) in the range \(0\leq s \leq p-1\).
+			</p>
+	
+	
+			<p>
+				This in turn gives us the probability that two random queries match. The first query of the pair is free to evaluate to any particular value \(f_{a,N}(s)\), and the second query must then match this value. Hence, the probability that a random pair of queries with the integers \(x_1\) and \(x_2\) yields a function match is also given by
+				\[Prob[\text{matched pair}] = \frac{1}{p}.\]
+			</p>
+	
+	
+			<p>Statistically, we would expect to have to test on the order of \(p\) different pairs of random queries to successfully obtain a function match. This may not take too many queries if the period \(p\) happens to be small. However, as we already know, its possible that the period itself can be exponentially large in the number of digits of \(N\). In that case, we may still need to make an exponential number of function queries to eventually find a function match making this algorithm inefficient in general.  Can we do any better with fewer queries?</p>
+	
+	
+			<p>Actually, we can! We just need to be more resourceful with all the information we get after our function queries. In this analysis, we determined the probability of finding a function match given two random queries with some pair of integers \(x_1\) and \(x_2\). After we make \(q\) different random queries to the function \(f_{a,N}\) with the integers \(x_1, x_2, \dots x_q\), its best to consider every possible pair of integers \( (x_i, x_j) \) and check if any of them yield function matches. In this way, we make best use of all the different queries we made and have more pairs to test for function matches.</p>
+	
+	
+			<h4>Question:</h4>
+	
+			<p>Given \(q\) integers \(x_1, x_2, \dots, x_q\), how many different pairs \((x_i, x_j)\) exist? Let's not count any pairs formed by an integer  with itself \((x_i,x_i)\), and also not double count pairs \((x_i, x_j) = (x_j, x_i)\).</p>
+	
+	
+			<h4>Answers:</h4>
+	
+			<ol>
+			<li>\(q^2\)</li>
+	
+			<li>\(q(q-1)\)</li>
+	
+			<li>\(\frac{q(q-1)}{2}\)</li>
+	
+			</ol>
+	
+			<div class="vspace"></div>
+			<h4>Explanation:</h4>
+			<p>**missing**</p>
+</section>
+
+
+<section>
+	
+	<p>
+	
+			After making \(q\) function queries to \(f_{a,N}\) with input integers \(x_1, x_2, \dots x_q\), the total number of  pairs we can consider is given by
+			\[(\text{# of pairs})=\frac{q(q-1)}{2}. \]
+			Now as we determined, the  probability for a pair to match is
+			\[Prob[\text{matched pair}]=\frac{1}{p}.\]
+	
+			<br>
+	
+			With this we can calculate the expected number of function matches from \(q\) queries as
+			 \[\mathbb{E}[\text{# of matches}] = (\text{# of pairs})\cdot Prob[\text{matched pair}] =\frac{q(q-1)}{2p}. \]
+	
+			 <br>
+	
+			This expression for \(\mathbb{E}[\text{# of matches}]\) in terms of the number of queries \(q\) and period \(p\) offers us valuable insight in regards to how well our probabilistic algorithm fairs at finding a function match after \(q\) random queries to \(f_{a,N}\).
+	
+			<br>
+	
+			In particular, let's figure out how many random queries we should expect to make before finding at least one function match by demanding that
+			\[1 \leq \mathbb{E}[\text{# of matches}] .\]
+			With this criterion we get
+			\[1 \leq \mathbb{E}[\text{# of matches}]=\frac{q(q-1)}{2p}, \]
+			or equivalently
+			\[ p \leq \frac{q(q-1)}{2}. \]
+			To more easily interpret this, let's loosen up this inequality by noting that
+			\[\frac{q(q-1)}{2} < q^2,  \]
+			which then implies
+			\[ p \leq q^2 \]
+			Finally, let's equivalently rewrite  this as
+			\[\sqrt{p} \leq q. \]
+	
+			<br>
+	
+			This equation tell us how many random queries \(q\), in terms of the period \(p\), we should expect to make before finding at least one function match: at least \(\sqrt{p}\). In computer science speak, the quantity \(\sqrt{p}\) is called a "lower bound" on the query complexity.
+	
+			<br>
+	
+			So if the period of the function \(f_{a,N}\) happens to be \(p = 100\), we would expect to make at least \(\sqrt{100}=10\) random queries to \(f_{a,N}\) before finding a function match.
+			If the period instead were \(p=1000\), then \(\sqrt{1000}\approx 30 \) queries would be needed.
+	
+			<br>
+	
+			With this in mind, let's make another attempt using this algorithm to find the period of the function \(f_{2,299}\) in the figure below. Not to spoil the find, but you may remember that the period of \(f_{2,299}\) is \(p=132\). With this knowledge, we can conclude that  \(\sqrt{132}\approx 12\) random queries should be expected before coming across our first function match. Of course, this is merely a statistical claim since there is no guarantee that a function match is found precisely when \(12\) random queries are made.
+	
+			<br>
+	
+			Try to repeat this algorithm a few times by clearing the random queries once a match is found and see how many queries it happens to take you. You will likely manage to find the true period with fewer than the \(132\) random queries it would taken with the deterministic strategy we originally used.
+	</p>
+	
+			<p><iframe src="Visuals/4.9/index.html" width = "520" height = "575"  > </iframe></p>
+	
+			
+	
+	
+</section>
+
+<section>
+	
+	<p>
+			How good is this algorithm in general? Instead of expressing our lower bound in terms of the unknown period \(p\) of the function \(f_{a,N}\), let's think of it in terms of our known parameter \(N\). Remember, the only thing we get to assume about the period is that \(p < N\). So to handle the worst case when the period might be nearly as large as \(N\), we get a general bound on the number of queries as
+			\[ \sqrt{N} \leq q . \]
+	
+			<br>
+	
+			By expressing the  expected number of queries we might need to find a function match in terms of \(N\), we can think of how our algorithm fairs as \(N\) gets larger. Now just as we have been doing throughout this course, to really determine how efficient our algorithm is we need to think of how it scales in terms of the number of digits \(n\) of \(N\).
+	
+	</p>	
+			<h4>Question:</h4>
+	
+			<p>Which expression best describes the lower bound \(\sqrt{N}\) in terms of the number of digits \(n\) of \(N\)?</p>
+	
+	
+			<h4>Answers:</h4>
+	
+			<ol>
+	
+	
+			<li>\(n\)</li>
+	
+			<li>\(n^{\frac{1}{2}}\)</li>
+	
+			<li>\(10^n\)</li>
+	
+			<li>\(10^{\frac{n}{2}}\)</li>
+	
+			</ol>
+	
+			<div class="vspace"></div>
+			<h3>Explanation:</h3>
+			<p>**missing**</p>
+	
+</section>
+
+
+<section>
+	
+	
+			<p>Let's finally conclude our analysis of the classical period finding algorithm we have been studying in this chapter, and touch base on our main goal of efficiently finding factors of \(N\). Of course, the reason we care so much about the period of the modular exponentiation function \(f_{a,N}\) is that it can be used to find factors of \(N\).</p>
+	
+	
+			<p>To find this period our approach has been to find multiples of the period by making random queries to the function \(f_{a,N}\). Once we have our hands on just a few multiples of the period, we could efficiently determine the true period by simply computing some greatest common divisors. However, the troublesome computational bottleneck in this algorithm is actually obtaining these precious multiples of the period.</p>
+	
+	
+			<p>
+				Remember, \(N\) grows exponentially as \(10^n\) in terms of the number of it's digits \(n\). Our analysis then shows that we would need to expect to make at least
+				\[ \sqrt{N} \sim 10^{\frac{n}{2}} \]
+				random queries to \(f_{a,N}\) just to obtain a multiple of the period. Unfortunately, that's still exponentially many queries! In fact, this  bound of \(\sqrt{N}\) on the number of random function queries to \(f_{a,N}\) is essentially the best we can do for classical period finding.
+			</p>
+	
+	
+			<p>In regards to factoring \(N\), recall from the first chapter of this course our original algorithm for guessing factors of \(N\) through simple trial division. There we also learned that \(\sqrt{N}\) guesses might be required to guess a nontrivial factor of \(N\), which matches the bound we derived here on the queries needed for period finding. Thus far, none of these strategies have proved themselves to be efficient at factoring.</p>
+	
+	
+			<p>So if we are restricted to only computing with classical means, then it doesn't seem so worthwhile to take this roundabout period finding approach to factoring after all!</p>
+	
+	
+			<p>Let's not get so discouraged by this negative result. We won't let all of our work here go to waste. In addition to picking up some essential insights on the period finding problem, one of the main objectives of this chapter was to understand the algorithmic limitations to period finding in the classical setting. This will now serve as a benchmark for improvement as we make our way into the quantum realm for Shor's factoring algorithm and allow us to fully appreciate it's merits.</p>
+	
+	
+			<p>Despite a classical computer's inability to solve the period finding problem efficiently, by harnessing the power of quantum computation Shor's algorithm is able to find this period efficiently!</p>
+	
+			<div>
+				<a>Next: Chapter 5 </a>
+				<br>
+				<a href="index.html">Contents</a>
+			</div>
+	
+</section>
+
+
+
+
+	</div>
+	</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script src="../plugin/math/math.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				history: true,
+				//transition: 'linear',
+				hash: true,
+				//disableLayout: false,
+
+				// slide numbering
+				slideNumber: 'c/t',
+
+
+				// The "normal" size of the presentation, aspect ratio will
+  				// be preserved when the presentation is scaled to fit different
+  				// resolutions. Can be specified using percentage units.
+  				width: 960,
+  				height: 800,
+
+  				// Factor of the display size that should remain empty around
+  				// the content
+  				margin: 0.04,
+
+  				// Bounds for smallest/largest possible scale to apply to content
+  				minScale: 0.2,
+  				maxScale: 2.0,
+
+				math: {
+					mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+					config: 'TeX-AMS_HTML-full',
+					TeX: {
+						Macros: {
+							R: '\\mathbb{R}',
+							set: [ '\\left\\{#1 \\; ; \\; #2\\right\\}', 2 ]
+						}
+					}
+				},
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath ]
+			});
+		</script>
+	</body>
+</html>

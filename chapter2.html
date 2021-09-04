@@ -1,0 +1,489 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Shor's Algorithm Ch. 2</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+
+		<link rel="stylesheet" href="dist/theme/white.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<style>
+			.reveal section {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+				background-color: white;
+			}
+			.div_bg {
+				background-color: white;
+			}
+			.vspace {
+				height: 5em
+			}
+			.slide_scroll {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+			}
+			.reveal section p {
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			
+		  }
+		  .reveal section ol {
+			
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			list-style-type: upper-alpha;
+			margin-bottom: 1em;
+		  }
+
+		  .reveal section iframe {
+			box-sizing: border-box;
+			display: flex; 
+			align-items: center; 
+			justify-content: center; 
+			border: 0px solid; 
+			margin: 0em 0; 
+			padding: 0em; 
+			background-color: white 
+		  }
+		</style>
+		<div class="reveal">
+			<div class="slides">
+			
+<section>
+	<h3>Shor's Algorithm</h3>
+	<hr>
+	<h4>Chapter 2</h4>
+	<h4>Modular Arithmetic and The Euclidean Algorithm</h4>
+
+	<div style=" position: absolute;
+	bottom: 0px;">
+		<a href="index.html">Contents</a>
+	</div>
+</section>
+
+
+ <section>
+			
+	 <p>
+	 In this chapter, we are going to pick up some helpful number theoretic tools that will enable us to approach the factoring problem from a different angle.  The idea of division is closely related to factoring a number, and division itself generally involves some remainders. Therefore, we are going to work with a special number system known as <b>modular arithmetic</b>, which is all about the remainders that are left after dividing one number with another.
+	 </p>
+	 <br>
+	 <p>Another tool that we will utilize involves finding the largest common factor shared between two integers, called the <b>greatest common divisor</b>. We'll come up with a powerful classical algorithm known as the <b>Euclidean algorithm</b>, which efficiently finds the greatest common divisor between any two integers.</p>
+	 <br>
+	 <p>These number theoretic techniques will play a central role in reducing the factoring problem down to something that we'll finally be able to solve efficiently with Shor's quantum algorithm. 
+	 </p>
+ </section>
+
+
+
+<section>
+	
+			<p>
+			To approach the factoring problem differently we are going to work with a special number system known as <b>modular arithmetic</b>. For some motivation before proceeding, consider two integers \(a\) and \(N\) and note that we can always express \(a\) as
+			\[ a = qN + r \]
+			for some integers \(q\) and \(r\) where \(r\) is less than \(N\). The integer \(r\) is just the remainder that is left when dividing \(a\) by \(N\), which is more readily seen from the expression
+			\[ \frac{a}{N} = q + \frac{r}{N}. \]
+			This expresses \(\frac{a}{N}\) as a whole integer part \(q \) and a fractional part \(\frac{r}{N}\).
+			</p>
+			<br>
+	
+			<h4> Question:</h4>
+			<p>
+			What can we conclude about the integers \(a\) and \(N\), if the remainder happens to be \(r=0\)?
+			</p>
+	
+		<br>
+		
+			<h4>Answers:</h4>
+			<ol>
+			 <li>\(N\) divides \(a\)</li>
+			 <li>\(N\) does not divide \(a\)</li>
+			</ol>
+		
+	<div class="vspace"></div>
+	
+	<h4> Explanation:</h4>
+	<p>
+	If this remainder happens to be \(r=0\) then \(a=qN\) so that that \(a\) is a multiple of \(N\), which is equivalent to saying that \(N\) divides \(a\).
+	</p>
+</section>
+
+<section>
+	
+	
+	
+			<p>
+				In modular arithmetic we pick an integer \(N\), called the <b>modulus</b>, and group all integers according to the remainder that is left after dividing the integer by the modulus. That is, if two integers \(a\) and \(b\) leave the same remainder after dividing by the modulus \(N,\) then we say that \(a\) is <b>congruent</b> to \(b\) modulo \(N\) and notate this as
+				\[a\equiv b (\text{mod} N). \]
+			</p>
+		 
+			<p>When dividing any integer by \(N\) the remainder can only be some integer between \(0\) and \(N-1.\) Therefore, when working modulo \(N\) the integers between \(0\) and \(N-1\) are simply congruent to themselves, and any other integer outside this range will also be congruent to one of the integers between \(0\) and \(N-1.\)</p>
+		
+			<p>Illustrated below is an arrangement of several integers in the case where the modulus is \(N=6.\) Here the integers are arranged into rows of length \(6\), and each of the \(6\) columns are distinctly colored. All the integers with the same color in a particular column are congruent to one of the circled integers between \(0\) and \(5\) with the same color.</p>
+		 <br>
+			<img src="Visuals/Images/modulargrid.jpeg">
+		 <br>
+	
+		 <h4>Question:</h4>
+	
+			<p>Which integer \(r\) in the range \(0\leq r \leq 5\) is congruent to   \( -19 (\text{mod } 6)\)?</p>
+	
+	
+	
+			<h4>Answers:</h4>
+			<ol>
+			 <li>0</li>
+			 <li>1</li>
+			 <li>2</li>
+			 <li>3</li>
+			 <li>4</li>
+			 <li>5</li>
+			</ol>
+	
+		<div class="vspace"></div>
+	
+		<h4>Explanation:</h4>
+		<p>We can express $-19$ as some multiple of $6$ plus a remainder $r$ as $-19=-4\cdot 6 + 5$. This leaves a remainder of $r=5$, and so by definition $-19(\text{mod } 6)\equiv 5$.</p>
+
+</section>
+
+
+<section>
+	
+		<p>
+			In the setting of modular arithmetic, we can now recast what it means for one number to divide another.
+		</p>
+		<br>
+		<h3>Question:</h3>
+		<p>
+			If the modulus \(N\) divides some nonzero integer \(a\), what must \(a\) be congruent to?
+		</p>
+	
+	
+	<h4>Answers:</h4>
+		<ol>
+			<li>\(0\)</li>
+			<li>\(a\)</li>
+			<li> \(N-1\)</li>
+		</ol>
+	
+	<div class="vspace"></div>
+	
+		<h3> Explanation:</h3>
+		<p>
+		If \(N\) divides \(a\), then \(a=qN\) for some integer \(q\). Therefore, \(\frac{a}{N}=q\) is a whole number  and so \(a\) leaves no remainder. In modular arithmetic, this means that \(a\equiv 0 (\text{mod }N)\).
+		</p>
+</section>
+
+
+<section>
+	
+			<p>
+			Many familiar algebraic properties from ordinary arithmetic also hold for modular arithmetic, but not all properties! Regardless, modular arithmetic does offer some unique properties that aren't present in ordinary arithmetic. One such property that will come in handy for our purpose is the following. If \(a\times b = c\), then
+			\[ c  (\text{mod } N) \equiv a\times b (\text{mod } N) \equiv a (\text{mod } N) \times b (\text{mod } N).  \]
+			This implies that we can reduce the quantities \(a\) and \(b\) modulo \(N\) before taking their product and arrive at the same answer had we first computed the product \(a\times b =c\) and then reduced \(c\) modulo \(N\).
+			</p>
+	
+	<h4>Question:</h4>
+	<p>
+			Which integer \(a\) in the range \(0\leq a \leq 14\) satisfies  \(a\equiv 2^{40} (\text{mod } 15)\)?
+	</p>
+	
+	<div class="vspace"></div>
+
+	<h4>Explanation:</h4>
+	 <p>
+			We could first calculate
+			\[2^{40}= 1099511627776\]
+			and then reduce the quantity modulo \(15\), but this involves some fairly large numbers. Instead, its more manageable to simply note \(2^{40}=(2^4)^{10}\) and calculate \(2^4=16\), which implies \(2^4\equiv16 \equiv 1 (\text{mod } 15)\).
+			This allows us to reduce \(2^{40}\) as
+			\[2^{40}\equiv (2^4)^{10} \equiv 1^{10}\equiv 1 \quad(\text{mod } 15).\]
+	</p>
+</section>
+
+<section>
+	
+	
+			<p>We know that we can verify if some integer \(a\) is a factor of \(N\) by dividing \(N\) by \(a\), and checking if the remainder is \(0\). If not, then \(a\) is not a factor of \(N\), but this does not necessarily rule out the possibility that \(a\) and \(N\) may share some common factors. Obviously, any two integers will always share \(1\) as a trivial common factor, but we are more interested in any non trivial common factors greater than \(1\).</p>
+		<br>
+			<p>
+				The greatest common factor of two integers \(a\) and \(N\) is called the <b>greatest common divisor</b> and is notated as
+				\[gcd(a, N).\]
+			</p>
+		 <br>
+			<p>If \(gcd(a,N)=1\), this just means that \(a\) and \(N\) share no common factors besides \(1\). In this case, we say that \(a\) and \(N\) are <b>coprime</b>.</p>
+		 <br>
+			<p>On the other hand, if we could calculate \(gcd(a,N)\) and check that \(gcd(a,N)>1\), then \(gcd(a,N)\) would be a nontrivial factor of \(N\).  If we somehow already knew all the nontrivial factors of \(a\), then we could determine \(gcd(a,N)\) by simply choosing the largest factor of \(a\) that also happens to divide \(N\). However, obtaining factors of a general number is the very problem we are trying to solve! Therefore, we need another way to calculate \(gcd(a,N)\) that doesn't require the general ability to factor.</p>
+		<br>
+			<p>Fortunately, there actually exists a well known efficient classical algorithm, called the <b>Euclidean algorithm</b>,  that doesn't require knowing the factors of a number but manages to compute \(gcd(a,b)\) of any two integers \(a\) and \(b\).</p>
+	
+</section>
+
+<section>
+	
+			<p>To understand how the Euclidean algorithm determines the greatest common divisor \(gcd(a,b)\), let's first make some essential observations. These observations will not only explain how the Euclidean algorithm works, but also give us insight on why it works.</p>
+		<br>
+			<p>To start, suppose that an integer \(d\) divides both \(a\) and \(b\).</p>
+		 <br>
+		 <h4>Question:</h4>
+			<p>Then is it true that \(d\) also divides the quantity \(a (\text{mod } b)\)?</p>
+	
+	
+		<h4>Answers:</h4>
+		<ol>
+			<li>True, \(d\) divides \(a (\text{mod } b)\). </li>
+			<li>False, \(d\) does not divide \(a (\text{mod } b)\).</li>
+		</ol>
+	
+		<div class="vspace"></div>
+
+	
+	<h4> Explanation:</h4>
+	<p>
+			If an integer \(d\) divides both \(a\) and \(b\), this means that both \(a\) and \(b\) are multiples of \(d\) so we can express
+			\[ a = sd \qquad \text{and} \qquad b=td \]
+			for some integers \(s\) and \(t\). Now consider the quantity \(r\equiv a (\text{mod } b) \), which is just the remainder that is left after we divide \(a\) by \(b\). That is,
+			\[a = qb + r, \]
+			where \(q\) is just some integer. We can rewrite this as
+			\[r=a-qb=sd-qtd=(s-qt)d. \]
+			Since the quantity \(s-qt\) is just some integer this shows that \(r\) is a multiple of \(d\). In other words, \(d\) divides \(r\). So indeed, \(d\) also divides \(r\equiv a (\text{mod } b)\).
+	</p>
+</section>
+
+<section>
+	
+			<p>
+				If \(d\) is any common factor of both \(a\) and \(b\), then \(d\) is also a factor of \(a (\text{mod } b).\) In particular, if \(d\) is the greatest common factor of \(a\) and \(b\), meaning \(d=gcd(a,b)\), then \(d\) must also be a common factor of both \(b\) and \(a (\text{mod } b)\). This implies that
+				\[gcd(a,b)\leq gcd(b, a(\text{mod } b)).\]
+				The inequality is present here because we have only shown that \(d\) is merely a common factor of \(b\) and \(a(\text{mod } b)\) and not necessarily the greatest common divisor of \(b\) and \(a (\text{mod } b)\). Might this be the case, however?
+						<br>
+				To answer this let's now ask a similar question, but from the other direction.
+				Suppose that an integer \(d\) divides both \(b\) and \(a (\text{mod } b)\).
+			</p>
+		 <br>
+		 <h4>Question:</h4>
+			<p>Then is it true that \(d\) also divides \(a\)?</p>
+	
+	<h4>Answers:</h4>
+	 <ol>
+		 <li>True, \(d\) divides \(a\).</li>
+		 <li>False, \(d\) does not divide \(a\).</li>
+	 </ol>
+	
+	 <div class="vspace"></div>
+
+	<h4> Explanation:</h4>
+	<p>
+			If an integer \(d\) divides both \(b\) and \(a (\text{mod } b)\), this means that both \(b\) and \(a (\text{mod } b)\) are multiples of \(d\) so we can express
+			\[ a (\text{mod } b) = ud \qquad \text{and} \qquad b=td \]
+			for some integers \(u\) and \(t\). Now let \(r\equiv a (\text{mod } b) \) so that
+			\[a = qb + r, \]
+			where \(q\) is just some integer. Then we can rewrite this as
+			\[a=qb+r=qtd+ud=(qt+u)d. \]
+			Since the quantity \(qt+u\) is just some integer this shows that \(a\) is a multiple of \(d\). In other words, \(d\) also divides \(a\).
+	</p>
+</section>
+
+<section>
+	
+	<p>
+			Likewise, if \(d\) is a common factor of both \(b\) and \(a (\text{mod } b)\), then \(d\) is also a factor of \(a\). Moreover, this also holds in the case where \(d=gcd(b,a (\text{mod } b))\). By making an analogous argument we made previously, we also get that
+			\[gcd(a,b)\geq gcd(b, a(\text{mod } b)).\]
+			Taking this inequality together with the reverse inequality we previously derived
+			\[gcd(a,b)\leq gcd(b, a(\text{mod } b)),\]
+			we conclude that it must be the case that
+			\[gcd(a,b) = gcd(b, a(\text{mod } b)).\]
+			<br>
+			Hence, if we want to determine \(gcd(a,b)\) we could first calculate \(a(\text{mod } b)\) and then alternatively determine \(gcd(b, a(\text{mod } b))\) instead. But what is this this good for? Well for a start, if \(b\leq a\) then \(a(\text{mod } b)\leq a\), and so calculating \(gcd(b, a(\text{mod } b))\) at least involves one smaller number compared to calculating \(gcd(a,b)\). Given this equivalence of greatest common divisors let's exploit this property further and not just stop here!
+			<br>
+			Continuing in this manner, let \(r\equiv  a(\text{mod } b)\). Then it must also be the case that
+			\[gcd(a,b) = gcd(b,r) = gcd(r, b(\text{mod } r)).\]
+			Again, \(b(\text{mod } r)\leq r\) so now we are working with even smaller numbers in determining the greatest common divisor. If we were to keep proceeding in this fashion we would get smaller and smaller numbers until we eventually arrive at \(0\). At this point, we would have an equivalence
+			\[gcd(a,b)=gcd(r', 0)\]
+			for some nonzero integer \(r'\).
+		</p>
+			<br>
+	
+			<h4>Question:</h4>
+			<p>If gcd(a,b)=gcd(r', 0) for some nonzero integer \(r'\), what is \(gcd(a,b)\)?</p>
+	
+	
+		<h4>Answers:</h4>
+		<ol>
+			<li>\(a\) </li>
+			<li>\(b\) </li>
+			<li>\(r'\) </li>
+			<li>\(0\) </li>
+		</ol>
+
+		<div class="vspace"></div>
+
+	<h3> Explanation:</h3>
+	<p>
+			Since any nonzero integer always divides \(0\) its immediate that \(gcd(r',0)=r'\). Therefore, if \[gcd(a,b)=gcd(r',0)\] then greatest common divisor of \(a\) and \(b\) is given by \(gcd(a,b)=r'\).
+	</p>
+</section>
+
+<section>
+	
+			<p>
+				In order to determine \(gcd(a,b)\), the Euclidean algorithm essentially computes smaller and smaller remainders and   utilizes this equivalence of greatest common divisors to arrive at
+				\[gcd(a,b)=gcd(r', 0)=r'\]
+				for some nonzero integer \(r'\).
+			</p>
+	
+
+			<p>We can summarize the steps of the Euclidean algorithm using this iterative process as follows.</p>
+	
+			<h4><b>The Euclidean Algorithm:</b></h4>
+	
+			<hr>
+			<div style="text-align: center;">
+				<div style="display: inline-block; text-align: left;">
+			<p>
+				<b>Input:</b> Integers \(a\) and \(b\) with \(a\geq b\).
+				<br>
+				<b>Output:</b> The greatest common divisor \(gcd(a,b).\)
+			</p>
+				</div>
+			</div>
+			<hr>
+	<br>
+
+	<div style="text-align: center;">
+		<div style="display: inline-block; text-align: left;">
+			<p  >
+				<b>Step 1:</b>
+				Set \(x=a\) and \(y=b\)
+			</p>
+	<br>
+			<p>
+				<b>Step 2:</b>
+				Calculate \(r\equiv x (\text{mod } y)\).
+				If \(r=0\), proceed to <b>Step 3</b>.
+				If \(r>0\), reset \(x=y\) and \(y=r\), and return to <b>Step 2</b>.
+
+			</p>
+
+			<br>
+			<p>
+				<b>Step 3:</b>
+				Output \(gcd(a,b)= y\).
+			</p>
+	</div>
+	</div>
+			<br>
+
+			<h3>Question:</h3>
+			<p>Using the Euclidean algorithm, what is \(gcd(286,221)\)?</p>
+	
+	<div class="vspace"></div>
+	
+	<h4>Explanation:</h4>
+	<p>
+			Following the steps of the Euclidean algorithm:
+	
+			<br>
+			First compute \(286 (\text{mod } 221)\equiv 65\).
+			<br>
+			Since \(65>0\), we then compute \(221 (\text{mod } 65)\equiv 26\).
+	
+			<br>
+			Since \(26>0\), we then compute \(65 (\text{mod } 26)\equiv 13\).
+	
+			<br>
+			Since \(13>0\), we then compute \(26 (\text{mod } 13)\equiv 0\).
+	
+			<br>
+			Having reached \(0\), we output \(gcd(286,221)=13.\)
+	</p>
+</section>
+
+<section>
+	
+			<p>The Euclidean algorithm takes a recursive approach in determining the greatest common divisor of two integers \(a\) and \(b\) by successively making one of the numbers smaller until we reach \(0\).</p>
+		<br>
+			<p>Each step in this iteration requires a division to be performed in order to compute the relevant remainder. Computationally speaking, a single division is quick and easy for a classical computer. Therefore, to asses the overall efficiency of the Euclidean algorithm what really matters is how many such iterations need to be performed.</p>
+		 <br>
+			<p>Note that after each iteration one of the numbers is made smaller by at least a half. Consecutively reducing the numbers in this way quickly leads the algorithm to its final output. Hence, the Euclidean algorithm is efficient! More specifically, the total steps needed for the Euclidean algorithm scales linearly in terms of the number of digits needed to represent the integers of interest.</p>
+		 <br>
+			<p>Although the Euclidean algorithm by itself doesn't quite help us solve the factoring problem in general, it will serve as a valuable and resourceful classical primitive that will aid us in our goal of factoring.</p>
+		  <br>
+			<p>In the next chapter, we'll apply the techniques of modular arithmetic and the the Euclidean algorithm to effectively translate the factoring problem into a different problem. This alternative avenue will pave the way for Shor's quantum algorithm, which will lead us to tackling the factoring problem efficiently!</p>
+
+			<div>
+				<a href="chapter3.html">Next: Chapter 3 </a>
+				<br>
+				<a href="index.html">Contents</a>
+			</div>
+</section>
+
+
+
+
+	</div>
+	</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script src="../plugin/math/math.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				history: true,
+				//transition: 'linear',
+				hash: true,
+				//disableLayout: false,
+
+				// slide numbering
+				slideNumber: 'c/t',
+
+
+				// The "normal" size of the presentation, aspect ratio will
+  				// be preserved when the presentation is scaled to fit different
+  				// resolutions. Can be specified using percentage units.
+  				width: 960,
+  				height: 800,
+
+  				// Factor of the display size that should remain empty around
+  				// the content
+  				margin: 0.04,
+
+  				// Bounds for smallest/largest possible scale to apply to content
+  				minScale: 0.2,
+  				maxScale: 2.0,
+
+				math: {
+					mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+					config: 'TeX-AMS_HTML-full',
+					TeX: {
+						Macros: {
+							R: '\\mathbb{R}',
+							set: [ '\\left\\{#1 \\; ; \\; #2\\right\\}', 2 ]
+						}
+					}
+				},
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath ]
+			});
+		</script>
+	</body>
+</html>

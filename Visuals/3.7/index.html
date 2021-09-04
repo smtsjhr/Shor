@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+
+<canvas id="canvas" width="500" height="500" style="border:1px solid #d3d3d3;"></canvas>
+<script type="text/javascript" src="3.7.js" async></script>
+
+<div style="display:none;">
+    <img id="function_label" src="equation_modexp_N.png" alt="function label">
+</div> 
+
+<input type='range' min='2' max='31' value='2' id='aslider' style="position: absolute; top:470px; left:20px;" oninput="a_update()" onchange="a_update()" onmouseup="a_update()"></input>
+
+<input type='range' min='2' max='32' value='15' id='Nslider' style="position: absolute; top:490px; left:20px;" oninput="N_update()" onchange="N_update()" onmouseup="N_update()"></input>
+
+
+
+</body>
+</html>

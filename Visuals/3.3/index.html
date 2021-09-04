@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+
+<canvas id="canvas" width="500" height="550" style="border:1px solid #d3d3d3;"></canvas>
+<script type="text/javascript" src="3.3.js" async></script>
+
+<div style="display:none;">
+    <img id="function_label" src="equation _modsquared.png" alt="function label">
+</div> 
+
+
+
+<input type='range' min='2' max='32' value='15' id='Nslider' style="position: absolute; top:530px; left:20px;" oninput="N_update" onchange="N_update()" onmouseup="N_update()"></input>
+
+<input type='range' min='1' max='32' value='1' id='Zslider' style="position: absolute; top:510px; left:20px;" oninput="N_update" onchange="Z_update()" onmouseup="Z_update()"></input>
+
+
+
+</body>
+</html>
