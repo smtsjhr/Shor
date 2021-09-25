@@ -1,0 +1,706 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Shor's Algorithm Ch. 6</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+
+		<link rel="stylesheet" href="dist/theme/white.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<style>
+			.reveal section {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+				background-color: white;
+			}
+			.div_bg {
+				background-color: white;
+			}
+			.vspace {
+				height: 5em
+			}
+			.slide_scroll {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+			}
+			.reveal section p {
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			
+		  }
+		  .reveal section ol {
+			
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			list-style-type: upper-alpha;
+			margin-bottom: 1em;
+		  }
+
+		  .reveal section iframe {
+			box-sizing: border-box;
+			display: flex; 
+			align-items: center; 
+			justify-content: center; 
+			border: 0px solid; 
+			margin: 0em 0; 
+			padding: 0em; 
+			background-color: white 
+		  }
+		</style>
+		<div class="reveal">
+			<div class="slides">
+			
+<section>
+	<h3>Shor's Algorithm</h3>
+	<hr>
+	<h4>Chapter 6</h4>
+	<h4>Hidden Periods in Entangled States</h4>
+
+	<div style=" position: absolute;
+	bottom: 0px;">
+		<a href="index.html">Contents</a>
+	</div>
+</section>
+
+
+ 
+	
+
+
+	
+
+
+	<section>
+		
+		<p>
+			In the last chapter we started constructing a quantum circuit with the goal of designing a fast period finding algorithm for the modular exponentiation function
+			\[f_{a,N}(x) = a^x \ (\text{mod } N).\]
+			Our main ingredient is a powerful quantum oracle for the modular exponentiation function in the form of a quantum gate \(U_{a,N}\). Together with the Hadamard transform, we learned how we can query the oracle \(U_{a,N}\) in superposition to construct the valuable  superposition state
+			 \[ |\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle ,\]
+			which is loaded with information about the modular exponentiation function.
+		</p>
+		
+		
+		
+		<p>The circuit we designed for creating this queried superposition state \(|\Psi_2\rangle\) is shown below. We begin with two quantum registers, each consisting of \(m\) qubits, initialized to the state \(|\Psi_0\rangle = |0\rangle|0\rangle\). Then we apply the \(m\) qubit Hadamard Transform \(H^{\otimes m}\) to the first register to create the superposition \(|\Psi_1\rangle\) before querying the oracle with the gate \(U_{a,N}\) to get \(|\Psi_2\rangle\).</p>
+		
+		
+		
+		<p class="aligncenter">
+		  <img src="Visuals/Images/circuit H-U.png" width="400" alt="circuit image">
+		  </p>
+		
+		
+		
+		<p>For example, here we simulate the action of this circuit with \(U_{2,15}\) using \(m=4\) qubits for each of the two registers. You can either run the whole circuit, or step through  and see the intermediary states visualized for reference.</p>
+		
+		
+		
+		<p><iframe src="Visuals/5.1.3/index.html" width = "520" height = "625"  > </iframe></p>
+		
+		
+		
+		
+		<p>In hopes of extracting useful information about the period from our quantum circuit, we witnessed the destructive consequences of measuring both registers of the system as depicted in the following circuit:</p>
+		
+		
+		
+		<p class="aligncenter">
+		  <img src="Visuals/Images/circuit H-U-M12.png" width="400" alt="circuit image">
+		  </p>
+		
+		
+		
+		
+		<p>When we measure both registers of our system all we really manage to get is information about a single function value of \(f_{a,N}\) at random, which is a complete waste of our quantum efforts when we could easily get the same information classically.</p>
+		
+		
+		
+		<p>Again, for the particular case of \(U_{2,15}\), this measurement process is simulated in the interactive below . Remember making a new independent measurement of the queried superposition state requires initializing the state and running the circuit again. This requires an additional query to the oracle \(U_{a,N}\) for every measurement. To keep track of the measurement statistics, histograms along the respective axis are shown giving a relative count of the observed states after the measurement.</p>
+		
+		
+		
+		
+		<p><iframe src="Visuals/5.2/index.html" width = "520" height = "625" style="box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 0px solid; margin: 0em 0; padding: 0em;" > </iframe></p>
+		
+		
+		
+		
+		<p>In hopes of more efficiently extracting useful information about the function's period, we need to do something different with our circuit in order to make best use of the delicate superposition state \(|\Psi_2\rangle\) before measuring it. Actually, we need to do something less, and not completely destroy the state by measuring both registers!  There really is something more to these states than being mere quantum superpositions! What can be more special than quantum superposition you wonder? Quantum entanglement -- a unique phenomena which results when the states of multiple quantum systems are correlated in a non-classical way!</p>
+		
+		
+		
+		<p>As we'll see, the periodic pattern of the function \(f_{a,N}\) encodes a special structure into the state \(|\Psi_2\rangle\) that manifests as certain correlations between the states of the two registers of our system. By carefully harnessing this quantum entanglement, we'll be able to get valuable information about the function's period!</p>
+		
+		
+		
+		<p>In this chapter, we'll pick apart the structure embodied in the valuable queried superposition state and reveal its entangled nature. In doing so, we will also discover how information about our sought after period is subtly hidden in the quantum states produced by our circuit.  With this understanding, we'll be able to better exploit both quantum superposition and entanglement in designing a quantum circuit for a fast period finding algorithm!</p>
+		
+		
+	</section>
+	
+	<section>
+		
+		<p>In our previous endeavors, we have come to understand the destructive consequences of measuring both registers of our queried superposition state \(|\Psi_2\rangle\). If our goal is to design a quantum period finding algorithm that is faster than our best classical algorithms, measuring the full quantum state is not very resourceful and will not offer us any speedups over our best classical algorithms.</p>
+		
+		
+		
+		<p>In hopes of not completely destroying the queried superposition state  \(|\Psi_2\rangle\), let's refrain a bit and see what happens when we measure only the second register of our system.</p>
+		
+		<p class="aligncenter">
+		<img src="Visuals/Images/circuit H-U-M2.png" width="400" alt="circuit image">
+		</p>
+		
+		<p>Run the quantum circuit in the figure below several times and observe what happens to the state after the measurement.</p>
+		
+		
+		
+		<p><iframe src="Visuals/6.1/index.html" width = "520" height = "625" > </iframe></p>
+		
+		
+		
+		<p>Something interesting is happening here! Again, measuring even part of the system still changes the state in a probabilistic manner, but only the second register's state is forced into one of the observed basis states after the measurement. However, since we don't measure the first register, its state is allowed to remain in superposition! We'll study the first registers state more closely in just a bit, but for now let's focus on just the second register after measuring it.</p>
+		
+		
+		
+		<h4>Question:</h4>
+		
+		<p>
+			When we measure only the second register of the state
+			\[ |\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle ,\]
+			what possible states can be observed for the second register?
+		</p>
+		
+		<h4>Answers:</h4>
+		
+		<ol>
+		<li>Any basis state \(|y\rangle\) for \(0\leq y \leq M-1\).</li>
+		
+		
+		<li>Only basis states \(|y\rangle\) for which \(y=f_{a,N}(x)\) for some \(0\leq x \leq M-1\).</li>
+		
+		
+		<li>Any basis state \(|y\rangle\) for \(0\leq y \leq p-1\), where \(p\) is the period of \(f_{a,N}\).</li>
+		
+		</ol>
+		
+		<h4>Explanation:</h4>
+		
+		
+	</section>
+	
+<section>
+	
+	
+	
+		<p>
+			When we measure only the second second register of the queried superposition state
+			\[ |\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle ,\]
+			we don't just observe any basis state \(|y\rangle\) of the second register.  The only possible basis states we can observe must be of the form \(|f_{a,N}(x)\rangle\) corresponding to some function value of \(f_{a,N}\) in the range \(0\leq x \leq M-1\). Moreover, when the measurement is repeated, we see only one of these possible states at random.
+		</p>
+	
+	
+	
+		<p>
+			Recall that the modular exponentiation function \(f_{a,N}\) only evaluates to \(p\) distinct values, where \(p\) is the period of the function. Due to its periodic nature, the first \(p\)  values of the function determine all possible output values:
+			\[f_{a,N}(0), \quad  f_{a,N}(1), \quad \dots f_{a,N}(p-1).  \]
+			In this way, after measuring the second register of \(|\Psi_2\rangle\) the observed state of its register can only ever be one of the states \(|f_{a,N}(s)\rangle\) corresponding to some integer \(s\) in the range \(0\leq s\leq p-1\). In the case of the particular function \(f_{2,15}\) we have been working with, which has a period of \(p=4\), these values are given by
+			\[f_{2,15}(0)=1, \quad f_{2,15}(1)=2, \quad f_{2,15}(2)=4, \quad f_{2,15}(3)=8 .\]
+		</p>
+	
+	
+	
+		<p>Together with its periodic behavior, this intrinsic structure of the modular exponentiation function \(f_{a,N}\)  is actually built into the quantum states of our circuit after making a query to the oracle \(U_{a,N}\). Not only are the possible observable states of the second register constrained by the function values of \(f_{a,N}\), but the function also forces the resulting superposition state after the measurement to be in a special form.</p>
+	
+	
+	
+		<p>Since the superposition state that results after this measurement depends on the observed function value \(f_{a,N}(s)\) which in turn corresponds to some integer \(s\) in the range \(0\leq s \leq p-1\), let's label the resulting superposition states post-measurement as \(|\Psi_3(s)\rangle\) to emphasize their dependence on \(s\).</p>
+	
+	
+	
+		<p>As a consequence of measuring the second register, notice that the resulting superposition \(|\Psi_3(s)\rangle\) contains precisely those states for which the second register must be in the observed state \(|f_{a,N}(s)\rangle\). This is evident in our visual plot of the states by noticing that the resulting points after measuring the second register all lie on the same horizontal line corresponding to states in which the second register is in the observed state \(|f_{a,N}(s)\rangle\).</p>
+	
+	
+	
+		<p><iframe src="Visuals/6.1/index.html" width = "520" height = "625" style="box-sizing: border-box; display: flex; align-items: center; justify-content: center; border: 0px solid; margin: 0em 0; padding: 0em;" > </iframe></p>
+	
+	
+	
+	
+		<h4>Question:</h4>
+	
+		<p>With this in mind, how can we describe the two register's basis states that appear in the particular superposition \(|\Psi_3(s)\rangle\) which may result after measuring the second register?</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+		<li>Any state \(|x\rangle|f_{a,N}(x)\rangle\), for \(0\leq x\leq M-1\).</li>
+	
+		<li>Any state \(|x\rangle|f_{a,N}(s)\rangle\), for \(0\leq x\leq M-1\).</li>
+	
+		<li>Only states \(|x\rangle|f_{a,N}(s)\rangle\), for \(0\leq x\leq M-1\) satisfying \(f_{a,N}(x)=f_{a,N}(s)\).</li>
+	
+		<li>Only the state \(|s\rangle|f_{a,N}(s)\rangle\).</li>
+	
+		</ol>
+	
+		<h4>Explanation:</h4>
+	
+</section>
+
+<section>
+	
+	
+
+	
+	
+		<p>
+			After measuring only the second register of the state
+			\[ |\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle\]
+			and observing a particular state \(|f_{a,N}(s)\rangle\) of the second register, the resulting superposition state \(|\Psi_3(s)\rangle\) contains only states of the form \(|x\rangle|f_{a,N}(s)\rangle\) for \(x\) satisfying \(f_{a,N}(x)=f_{a,N}(s)\). We can express this superposition as
+			\[|\Psi_3(s)\rangle = \sum_{\substack{x: \ f_{a,N}(x) = f_{a,N}(s)}}|x\rangle|f_{a,N}(s)\rangle, \]
+			where the summation is only over the integers \(x\) in the range \(0\leq x \leq M-1\) which evaluate to the same observed value
+			\(f_{a,N}(x)=f_{a,N}(s)\). Also, note that we have omitted the  normalization factor in our expression for the state \(|\Psi_3(s)\rangle\) for the time being, but it is to be understood that the states \(|\Psi_s(s)\rangle\) are equally weighted superpositions.
+		</p>
+	
+	
+	
+		<p>Let's try to make some sense of whats going on here. After only measuring the second register of the state \(|\Psi_2\rangle\), the only information we get about the function \(f_{a,N}\) is merely the one particular function value \(f_{a,N}(s)\) encoded in the second register's state. However, since we don't measure the first register we don't necessarily get any information about which specific input integer \(s\) evaluates to the observed value \(f_{a,N}(s)\). By remaining oblivious to this information, the state of the first register is able to remain in superposition, which in turn results in the full system left in one of the possible states \(|\Psi_3(s)\rangle\) after the measurement.</p>
+	
+	
+	
+		<p>Actually, the resulting superposition states \(|\Psi_3(s)\rangle\) are hinting at something deeper going on here! As we're realizing, the states of the two registers of \(|\Psi_3(s)\rangle\)  are actually correlated in a special way as dictated by the function \(f_{a,N}\). If we end up with a particular state \(|\Psi_3(s)\rangle\) after the measurement, then in order to be consistent with the observed state \(|f_{a,N}(s)\rangle\) of the second register, the states \(|x\rangle\) which comprise the first register's superposition state must satisfy \(f_{a,N}(x) = f_{a,N}(s)\). Through these correlations, the resulting superposition states \(|\Psi_3(s)\rangle\) manage to encode valuable information about the period of the function \(f_{a,N}\).</p>
+	
+</section>
+
+<section>
+	
+
+	
+	
+		<p>
+			To see how our quantum states manage to encode desired information about the period, let's come back to our example with the function \(f_{2,15}\), which has a period of \(p=4\). In this case we queried the oracle \(U_{2,15}\) in superposition to construct the state
+			\[ |\Psi_2\rangle = \sum_{x=0}^{15}|x\rangle|f_{2,15}(x)\rangle.\]
+			Consider tabulating all the states \(|x\rangle|f_{2,15}(x)\rangle\) for \(0\leq x\leq 15\) that appear in the queried superposition state \(|\Psi_2\rangle\) by arranging them into \(p=4\) rows as follows:
+		</p>
+	
+
+		<p>
+			
+				\[ |0\rangle|f_{2,15}(0)\rangle \quad |4\rangle|f_{2,15}(4)\rangle \quad |8\rangle|f_{2,15}(8)\rangle \quad |12\rangle|f_{2,15}(12)\rangle  \]
+
+				\[|1\rangle|f_{2,15}(1)\rangle \quad |5\rangle|f_{2,15}(5)\rangle \quad |9\rangle|f_{2,15}(9)\rangle \quad |13\rangle|f_{2,15}(13)\rangle \]
+				\[|2\rangle|f_{2,15}(2)\rangle \quad |6\rangle|f_{2,15}(6)\rangle \quad |10\rangle|f_{2,15}(10)\rangle \quad |11\rangle|f_{2,15}(11)\rangle \]
+				\[|3\rangle|f_{2,15}(3)\rangle \quad |7\rangle|f_{2,15}(7)\rangle \quad |14\rangle|f_{2,15}(14)\rangle \quad |15\rangle|f_{2,15}(15)\rangle \]
+			 
+		</p>
+	
+	
+	
+		<p>Let's go further and substitute the only \(p=4\) function values of \(f_{2,15}\) that are encoded in the second register of the states:</p>
+	
+	
+	
+		<p>
+			
+				\[|0\rangle|1\rangle \quad |4\rangle|1\rangle \quad |8\rangle|1\rangle \quad |12\rangle|1\rangle \]
+				\[|1\rangle|2\rangle \quad |5\rangle|2\rangle \quad |9\rangle|2\rangle \quad |13\rangle|2\rangle \]
+				\[|2\rangle|4\rangle \quad |6\rangle|4\rangle \quad |10\rangle|4\rangle \quad |11\rangle|4\rangle \]
+				\[|3\rangle|8\rangle \quad |7\rangle|8\rangle \quad |14\rangle|8\rangle \quad |15\rangle|8\rangle \]
+			
+		</p>
+	
+	
+	
+		 <p>When arranged in this way, all the function values \(f_{2,15}(x)\) encoded in the second register of the states belonging to a particular row are the same, and each row corresponds to one of the \(p=4\) different function values of \(f_{2,15}\).</p>
+	
+	
+	
+		<p>Now notice that each row precisely describes one of the resulting superposition states \(|\Psi_3(s)\rangle\) after we measure the second register of \(|\Psi_2\rangle\). In particular, the state \(|\Psi_3(s)\rangle\) consists of a superposition of just those states that appear in row \(s\).</p>
+	
+	
+	<p>
+		
+		
+			\[ |\Psi_3(0)\rangle \quad = \quad |0\rangle|1\rangle \quad + \quad |4\rangle|1\rangle \quad + \quad |8\rangle|1\rangle \quad + \quad |12\rangle|1\rangle\]
+		
+			\[ |\Psi_3(1)\rangle \quad = \quad |1\rangle|2\rangle \quad + \quad |5\rangle|2\rangle \quad + \quad |9\rangle|2\rangle \quad + \quad |13\rangle|2\rangle\]
+		
+			\[ |\Psi_3(2)\rangle \quad = \quad |2\rangle|4\rangle \quad + \quad |6\rangle|4\rangle \quad + \quad |10\rangle|4\rangle \quad + \quad |15\rangle|4\rangle\]
+		
+			\[ |\Psi_3(3)\rangle \quad = \quad |3\rangle|8\rangle \quad + \quad |7\rangle|8\rangle \quad + \quad |11\rangle|8\rangle \quad + \quad |15\rangle|8\rangle\]
+		
+	</p>
+	
+	
+		<p>
+			In essence, all the basis states that appear in the queried superposition
+			\[ |\Psi_2\rangle = \sum_{x=0}^{15}|x\rangle|f_{2,15}(x)\rangle\]
+			can be partitioned into \(p=4\) different groups as described by the states \(|\Psi_3(s)\rangle\).
+		</p>
+	
+	
+	
+	
+		<p>
+			With this realization,  we can equivalently describe the state
+			\(|\Psi_2\rangle \) before we make any measurements in terms of the states \(|\Psi_3(s)\rangle\) as
+			\[ |\Psi_2\rangle = \sum_{s=0}^{p - 1}|\Psi_3(s)\rangle.\]
+			This expression shows that we can represent the queried superposition state \(|\Psi_2\rangle\) as a superposition of the possible post-measurement states \(|\Psi_3(s)\rangle\). Be sure to keep this fact in mind, because we'll come back and understand the implications of this insight after we keep digging a little deeper for our sought after period!
+		</p>
+	
+	
+	
+	
+		<p>
+			What we are actually witnessing is a manifestation of the periodic nature the modular exponentiation function \(f_{a,N}\), and you can really see it shine here! Recall from our study in the previous chapter that we can concisely characterize the periodic behavior of the function \(f_{a,N}\) in the language of modular arithmetic as
+			\[ f_{a,N}(x) = f_{a,N}(y) \quad \text{if and only if} \quad x = y \  (\text{mod } p), \]
+			where \(p\) is the period of \(f_{a,N}\). Remember by definition, \(a = b \ (\text{mod } r)\) just means that \(a = b + jr \) for some integer \(j\), so we can equivalently describe this property as
+			\[ f_{a,N}(x) = f_{a,N}(y) \quad \text{if and only if} \quad |x - y| = jp \]
+			for some integer \(j\).
+		</p>
+	
+	
+	
+		<p>
+			This pattern suggests that we can also describe  the post-measurement superposition state
+			\[|\Psi_3(s)\rangle = \sum_{\substack{x:  \ f_{a,N}(x) = f_{a,N}(s)}}|x\rangle|f_{a,N}(s)\rangle \]
+			more explicitly in terms of the period \(p\) using modular arithmetic as well!
+		</p>
+	
+	
+	
+		<h4>Question:</h4>
+	
+		<p>If \(|x\rangle|f_{a,N}(s)\rangle\) appears in the superposition \(|\Psi_3(s)\rangle\), which of the following conditions must be true?</p>
+	
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+		 <li>\(x = s \ (\text{mod } p)\)</li>
+	
+		<li>\(x = p \ (\text{mod } s)\)</li>
+	
+		<li>\(p = x \ (\text{mod } s)\)</li>
+	
+		<li>\(p = s \ (\text{mod } x)\)</li>
+		</ol>
+	
+		<h4>Explanation:</h4>
+	
+		<p>\(x = s \ (\text{mod } p)\)</p>
+
+</section>
+	
+<section>
+	
+
+	
+	
+	
+	<p>
+		Using the language of modular arithmetic, we can now alternatively describe the resulting superposition states after measuring the second register of \(|\Psi_2\rangle\) as
+		\[|\Psi_3(s)\rangle = \sum_{\substack{x \ x = s \ (\text{mod } p) }} |x\rangle|f_{a,N}(s)\rangle .  \]
+		Here, the summation ranges only over the integers in the range \(0\leq x \leq M-1\) which satisfy the relation \(x = s \ (\text{mod } p)\). Again, these are precisely the values \(x\) that get mapped to the same observed value of the second register:  \( f_{a,N}(x)=f_{a,N}(s).\)
+		
+	</p>
+	
+	
+	<p>
+		Let's continue to further pick these states apart by focusing on just the first register of \(|\Psi_3(s)\rangle\), and ignore the observed state of the second register. We can now be much more precise about what happens when we measure the second register of the queried superposition state \(|\Psi_2\rangle\). If we happened to observe some state \(|f_{a,N}(s)\rangle\) in the second register after its measurement, then when isolated, the first register is left in the particular superposition
+		\[\sum_{x = s \ (\text{mod } p)}|x\rangle \]
+		corresponding to some integer \(s\) in the range \(0\leq s \leq p -1\).
+		
+	</p>
+	
+	
+	<p>
+		In what follows, we'll refer to these special states as **periodic superposition states**, and you may have already gotten a chance  to get acquainted with them in another chapte! Since we'll be dealing with these states quite intimately, its worth introducing some convenient notation for denoting periodic superposition states with the label \(|\psi_p^s\rangle\), where we add a subscript \(p\) given by the period and a superscript \(s\) to highlight their dependence:
+		\[|\psi_p^s\rangle := \sum_{x = s \ (\text{mod } p)}|x\rangle. \]
+		
+	</p>
+	
+	
+	<p>
+		We can be even more explicit in describing periodic superposition states \(|\psi_p^s\rangle\) using the definition of modular arithmetic which tells us that if
+		\( x = s \ (\text{mod } p) \), then \(x\) must be of the form
+		\[ x = s + jp \quad \text{for some integer} \ j. \]
+		So now we can equivalently describe a periodic superposition state as
+		\[|\psi_p^s\rangle = \sum_{j} |s + jp\rangle, \]
+		where the sum is indexed by the integer \(j\) accordingly with respect to the state's dimension. That is, \(j\) should range so that the integer label of the basis states \(|s + jp\rangle\) lies within the range \(0\leq s+jp\leq M-1\), where \(M\) is the dimension of the state.
+		
+	</p>
+	
+	
+	<p>
+		In the case of our circuit using the oracle \(U_{2,15}\) where the first register has dimension \(M=16\), the periodic superposition states that could result in the first register are visualized below. Since the period of the function \(f_{2,15}\) happens to be \(p=4\), here we get \(4\) periodic superposition states of the form \(|\psi_4^s\rangle\) for \(0\leq s\leq 3\).
+		
+	</p>
+	
+	
+	<p>
+		<iframe src="Visuals/6.2.1/index.html" width = "520" height = "275"  > </iframe>
+		
+	</p>
+	
+	
+
+	
+	
+	<p>
+		Although it may not have been obvious at first, we can now see how these states manage to subtly encode information about the period!
+		For \(s=0\), we can think of the basis states that appear in the periodic superposition state
+		\[|\psi_p^0\rangle = \sum_{j}|jp\rangle\]
+		 simply as all multiples of the period \(p\) in the range \(0\leq x \leq M\). When \(s > 0\), the states in
+		 \[|\psi_p^s\rangle = \sum_{j}|s + jp\rangle\]
+		correspond to "shifted" multiples of the period \(s + jp\). Therefore, we'll refer to the parameter \(s\) as the "shift" of the periodic superposition state \(|\psi_p^s\rangle\). In particular, we'll sometimes refer to \(|\psi_p^0\rangle\) as the "un-shifted" periodic superposition state, and the others corresponding to \(s>0\) as `"shifted" periodic superposition states.
+	</p>
+
+	<p>
+		<iframe src="Visuals/6.2/index.html" width = "520" height = "275" > </iframe>
+		
+	</p>
+
+</section>
+
+<section>
+	
+	<p>
+		
+			Before moving on to actually coming up with a way to efficiently extract information about the period from these periodic superposition states, let's recap what we have learned about the  special structure of the quantum sates produced by our circuit.
+		
+	</p>
+	
+	
+		<p>
+			Using our newly developed notion of periodic superposition states, we can now concisely describe the states that result after measuring only the second register of the queried superposition state
+			\[ |\Psi_2\rangle = \sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle. \]
+			If we happen to observe the state \(|f_{a,N}(s)\rangle\) in the second register, then the state of the full system is left in the form
+			\[|\Psi_3(s)\rangle =|\psi_p^s\rangle|f_{a,N}(s)\rangle, \]
+			in which the first register's state is given by the corresponding periodic superposition state
+			\[|\psi_p^s\rangle = \sum |x\rangle = |s + jp\rangle. \]
+		</p>
+	
+	
+	
+	<p>
+		
+			The fact that we can break up the superposition states \(|\Psi_3(s)\rangle\) of our full system in terms of two definite states \(|\psi_p^s\rangle\) and \(|f_{a,N}(s)\rangle\) of the respective registers is actually telling us something quite profound! In quantum physics, we refer to general states like this as ``separable states''. In the case of a two register quantum system, as the name suggests, a general separable state \(|\Psi\rangle\) is one which can be described exactly by two separate states, say \(|\varphi_1\rangle\) and \(|\varphi_2\rangle\), of its constituent registers:
+			\[|\Psi\rangle = |\varphi_1\rangle |\varphi_2\rangle. \]
+		
+	</p>
+	
+	
+		<p>The nice thing about separable quantum states is their sensible familiarity to classical states. Being able to describe the state of a full system in terms of definite states of the system's various parts is quite natural and expected classically. In this regard, when dealing with a quantum system comprised of multiple registers, separable quantum states afford an analogous description in which the full state can be described by definite quantum states of the system's registers.</p>
+	
+	
+		<p>Okay, so what's the big deal with separable states? Not too much actually. The interesting thing is the fact that not all quantum states are separable! By definition, when a quantum state which consists of multiple registers is not separable, then we say that it is **entangled**. Entangled states turn out to be much more interesting in regards to quantum phenomenon by the way they exhibit non-classical correlations, and often play an essential role in quantum computation!</p>
+	
+	
+		<p>As a forewarning, this distinction between whether or not a quantum state is separable or entangled can seem a bit subtle on the surface when we have to judge by staring at a mathematical expression for the state.</p>
+	
+	
+		<p>To test ourselves, let's consider the most primitive scenario where quantum entanglement between systems can exist: two quantum registers comprised of a single qubit each.</p>
+	
+	
+		<h4>Question:</h4>
+	
+		<p>Which of the following two qubit states are separable?</p>
+	
+		<h4>Answers:</h4>
+	
+		<p>(Check all that apply)</p>
+
+	<p>	
+			<ol>
+			<li>\(|\Phi_A\rangle = |0\rangle|1\rangle \)</li>
+		
+			<li>\(|\Phi_B\rangle = |0\rangle|0\rangle +|0\rangle|1\rangle \)</li>
+		
+			<li>\(|\Phi_C\rangle = |0\rangle|0\rangle + |1\rangle|1\rangle\)</li>
+		
+			<li>\(|\Phi_D\rangle = |0\rangle|0\rangle + |0\rangle|1\rangle + |1\rangle|0\rangle + |1\rangle|1\rangle\)</li>
+		
+			</ol>
+		
+	</p>
+
+		<h4>Explanation:</h4>
+	
+		<p>\( |\Phi_A\rangle\), \( |\Phi_B\rangle\), and \( |\Phi_D\rangle\).</p>
+	
+</section>
+
+<section>
+	
+
+	
+		<p>
+			The nice thing about being able to describe the post-measurement states of our circuit in the separable form
+			\[|\Psi_3(s)\rangle = |\psi_p^s\rangle|f_{a,N}(s)\rangle\]
+			is that it allows us to clearly see how the two register's of our system are correlated after the measurement. The link between the two states in the respective registers of \(|\Psi_3(s)\rangle\) is the shift parameter \(s\), which is determined by some random integer in the range \(0\leq s \leq p -1\). Every time we observe the state \(|f_{a,N}(s)\rangle\) in the second register, the first register must be in the state \(|\psi_p^s\rangle\).
+		</p>
+	
+	
+		<p>
+			Let's take this insight back and think about what this implies about our original queried superposition state
+			\[|\Psi_2\rangle = \sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle. \]
+			Since this state is a superposition of multiple basis states of our two registers, its not  written in an obvious separable form. But perhaps \(|\Psi_2\rangle\) actually is a separable state, and we just need to tease our expression into a suitable form to see it.
+		</p>
+	
+	
+		<p>
+			Remember we realized earlier that we can express the state \(|\Psi_2\rangle\) as a superposition of the possible post-measurement states \(|\Psi_3(s)\rangle\) as
+			\[ |\Psi_2\rangle = \sum_{s=0}^{p - 1}|\Psi_3(s)\rangle.\]
+			Substituting in our new expression of the separable state \(|\Psi_3(s)\rangle = |\psi_p^s\rangle|f_{a,N}(s)\rangle\) then gives us
+			\[|\Psi_2\rangle = \sum_{s=0}^{p-1}|\psi_p^s\rangle|f_{a,N}(s)\rangle. \]
+			This tells us that we can describe the queried superposition state \(|\Psi_2\rangle\) as a superposition of separable states \(|\Psi_3(s)\rangle =|\psi_p^s\rangle|f_{a,N}(s)\rangle\). This still does not quite fit the definition of a separable quantum state exactly, but how can we be so sure that \(|\Psi_2\rangle\) is not a separable state?
+		</p>
+	
+	
+		<p>
+			Is it possible to describe the state \(|\Psi_2\rangle\) as a separable state? If so, then  there must  exist two states \(|\varphi_1\rangle\) and \(|\varphi_2\rangle\) of our two registers respectively, such that
+			\[|\Psi_2\rangle = |\varphi_1\rangle|\varphi_2\rangle ? \]
+			If not, then \(|\Psi_2\rangle\) is an entangled state.
+		</p>
+	
+	
+		<h4>Question:</h4>
+	
+		<p>What do you think?</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+		<li>\(|\Psi_2\rangle\) is a separable state.</li>
+	
+		<li>\(|\Psi_2\rangle\) is an entangled state.</li>
+		</ol>
+	
+	
+		<h4>Explanation:</h4>
+	
+		<p>Entangled</p>.
+</section>
+
+<section>
+	
+	
+	
+	
+		<p>
+			As it turns out, the queried superposition state
+			\[|\Psi_2\rangle = \sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle. \]
+			is in fact an entangled quantum state! In other words, this means that \(|\Psi_2\rangle\) is not a separable state, implying that
+			\[|\Psi_2\rangle \neq |\varphi_1\rangle|\varphi_2\rangle \]
+			for any two possible states \(|\varphi_1\rangle\) and \(|\varphi_2\rangle\) of the respective registers.  Its just not possible!
+		</p>
+	
+	
+		<p>
+			The entangled nature of the state \(|\Psi_2\rangle\) explains the special correlations we witnessed between the two registers of our system after measuring just the second register. From this, we learned that we can alternatively describe the queried superposition state before any measurements as
+			\[|\Psi_2\rangle = \sum_{s=0}^{p-1}|\psi_p^s\rangle|f_{a,N}(s)\rangle. \]
+		</p>
+	
+	
+		<p>
+			Remember, the way we manage to construct the state \(|\Psi_2\rangle\) with our circuit is by querying the oracle \(U_{a,N}\) with the input state
+			\[|\Psi_1\rangle = \sum_{x=0}^{M-1}|x\rangle|0\rangle, \]
+			so that
+			\[U_{a,N}|\Psi_1\rangle = |\Psi_2\rangle. \]
+			In this situation, note that before querying the oracle \(U_{a,N}\), the input state \(|\Psi_1\rangle\) is a separable state, while the output state \(|\Psi_2\rangle\) is an entangled state. Therefore, the oracle \(U_{a,N}\) is responsible for creating the entangled state! When a quantum gate such as \(U_{a,N}\) is able to transform separable states into entangled states, we call the gate an **entangling gate**. In quantum computation entangling gates are held in high regard for their unique offerings!
+		</p>
+	
+	
+		<p>We already know how special general quantum superposition states are, but even more special are entangled quantum states! Almost all worthwhile quantum algorithms not only harness the quantum phenomenon of superposition, but also entanglement. So we should pay respect and give fair credit to our powerful quantum oracle \(U_{a,N}\) for modular exponentiation!</p>
+	
+	
+		<p>Quantum entanglement aside, our main take away from this chapter is illuminating how our queried superposition state \(|\Psi_2\rangle\) manages to encode information about the period \(p\) of the the function \(f_{a,N}\). Still though, we are yet to actually come up with a satisfactory period finding algorithm. However, we are finally in a good position to tease out useful information about the hidden period efficiently!</p>
+	
+	
+		<p>In the next chapter, we will leverage our newly gained insight and finally complete our quantum period finding circuit.  There's only one essential missing ingredient we need for completing the design of an efficient quantum period finding circuit. This final piece comes in the form of a special gate, the Quantum Fourier Transform, which is at the heart of many quantum algorithms!</p>
+
+		<div>
+			<a>Next: Chapter 7 </a>
+			<br>
+			<a href="index.html">Contents</a>
+		</div>
+	
+
+</section>
+	
+	
+		
+
+
+
+
+
+
+
+	</div>
+	</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script src="plugin/math/math.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				history: true,
+				//transition: 'linear',
+				hash: true,
+				//disableLayout: false,
+
+				// slide numbering
+				slideNumber: 'c/t',
+
+
+				// The "normal" size of the presentation, aspect ratio will
+  				// be preserved when the presentation is scaled to fit different
+  				// resolutions. Can be specified using percentage units.
+  				width: 960,
+  				height: 800,
+
+  				// Factor of the display size that should remain empty around
+  				// the content
+  				margin: 0.04,
+
+  				// Bounds for smallest/largest possible scale to apply to content
+  				minScale: 0.2,
+  				maxScale: 2.0,
+
+				math: {
+					mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+					config: 'TeX-AMS_HTML-full',
+					TeX: {
+						Macros: {
+							R: '\\mathbb{R}',
+							set: [ '\\left\\{#1 \\; ; \\; #2\\right\\}', 2 ]
+						}
+					}
+				},
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath ]
+			});
+		</script>
+	</body>
+</html>
