@@ -1,0 +1,1012 @@
+<!doctype html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+		<title>Shor's Algorithm Ch. 5</title>
+
+		<link rel="stylesheet" href="dist/reset.css">
+		<link rel="stylesheet" href="dist/reveal.css">
+
+		<link rel="stylesheet" href="dist/theme/white.css">
+
+		<!-- Theme used for syntax highlighted code -->
+		<link rel="stylesheet" href="plugin/highlight/monokai.css">
+	</head>
+	<body>
+		<style>
+			.reveal section {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+				background-color: white;
+			}
+			.div_bg {
+				background-color: white;
+			}
+			.vspace {
+				height: 5em
+			}
+			.slide_scroll {
+				bottom: 0px; overflow-y: auto  !important; overflow-x: hidden !important;
+			}
+			.reveal section p {
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			
+		  }
+		  .reveal section ol {
+			
+			display: inline-block;
+			font-size: 0.5em;
+			line-height: 1.2em;
+			text-align: left;
+			vertical-align: top;
+			list-style-type: upper-alpha;
+			margin-bottom: 1em;
+		  }
+
+		  .reveal section iframe {
+			box-sizing: border-box;
+			display: flex; 
+			align-items: center; 
+			justify-content: center; 
+			border: 0px solid; 
+			margin: 0em 0; 
+			padding: 0em; 
+			background-color: white 
+		  }
+		</style>
+		<div class="reveal">
+			<div class="slides">
+			
+<section>
+	<h3>Shor's Algorithm</h3>
+	<hr>
+	<h4>Chapter 5</h4>
+	<h4>A Quantum Oracle for Modular Exponentiation</h4>
+
+	<div style=" position: absolute;
+	bottom: 0px;">
+		<a href="index.html">Contents</a>
+	</div>
+</section>
+
+
+ 
+	
+
+<section>
+	
+	
+	
+		  <p>We have come quite a ways in this course on our pursuit for an efficient factoring algorithm. Thus far, we have remained almost entirely in the classical setting picking up some valuable number theoretic tools and exploring various classical algorithms for factoring. Unfortunately, none of our classical algorithms perform quick enough to handle factoring large numbers.</p>
+	
+	
+		  <p>Regardless, many of the techniques and insights we learned along the way will continue to guide us as we finally enter the quantum realm! Our goal for the remainder of this course will be to design a quantum algorithm for factoring numbers that not only outperforms any known classical algorithm, but does so efficiently!</p>
+	
+	
+		  <p>In particular, our main route to factoring will still be solving the period finding problem we closely studied in the last chapter. There we learned that an efficient algorithm for the period finding problem easily translates to an efficient factoring algorithm. In the next couple of quizzes, we will design a quantum circuit that is used in Shor's algorithm for finding this period  efficiently. </p>
+	
+	
+		  <p>For now in this chapter, we will introduce and understand a valuable quantum gate that will serve as an oracle for the modular exponentiation function used for period finding. This powerful quantum gate will harness the unique quantum features of superposition and entanglement that are partly responsible for the speed up Shor's algorithm offers. We'll design and experiment with a quantum circuit that allows us to query this quantum oracle in superposition, and learn both what it can and cannot offer us for our period finding pursuits. </p>
+	
+	
+		  <p>It is important to keep in mind that Shor's factoring algorithm is not exclusively a quantum algorithm for quantum computers alone. Rather, Shor's algorithm  is a collaborative effort between both classical and quantum computers that handle the various steps required for factoring numbers. While our classical computers efficiently take care of many of the number crunching tasks necessary, the quantum computer will come in to efficiently handle the heavy lifting where a classical computer just won't cut it!</p>
+	
+	
+	
+</section>
+	
+<section>
+	
+	
+	
+		<p>Throughout our algorithmic endeavors in the classical setting we have been doing a lot of guesswork in hopes of finding factors. Our algorithms have ranged from fairly naive guessing strategies to more informed and resourceful approaches. These methods naturally led us into the domain of probabilistic algorithms where we utilize randomness and have to deal with our algorithms having a chance at either success or failure. To formally gauge how good these algorithms fair in practice, we analysed how many guesses or queries might be needed to expect the algorithm to succeed. In hopes of an efficient algorithm, our aim has been to obtain useful information without having to make an exponential number of guesses or queries. This will continue to be our main objective as we design a quantum algorithm for period finding.</p>
+	
+		
+	
+	
+		<p>Due to the inherent probabilistic nature of quantum computation, we will naturally have to deal with our quantum algorithms also having a chance at success or failure. The art of designing good quantum algorithms is being able to tailor the odds of the algorithms success in our favor. So in a certain sense, we are letting the quantum computer do the guesswork for us! Although in some cases it may be possible to construct a quantum algorithm which guarantees success after just one run of a quantum circuit, our quantum period finding algorithm will typically require multiple runs from the circuit to obtain sufficient information. Therefore, again our main objective here is to obtain enough information that helps us find the period with as few runs of the quantum circuit as possible.</p>
+	
+		
+	
+		<p>
+	
+		To recap our main avenue for factoring an integer \(N\) via period finding, recall that our goal is to find the period of the modular exponentiation function defined as
+		\[f_{a,N}(x) =  a^x \ (\text{mod } N). \]
+		 The modular exponentiation function \(f_{a,N}\) describes the action of repeatedly multiplying an integer \(a\) by itself, called the base, and then reducing that quantity modulo \(N\), which is the number we would like to factor. For certain choices of base \(a\) satisfying \(gcd(a,N)=1\), the function \(f_{a,N}\) exhibits a periodic behavior in which the function's values repeat every \(p\) integers.
+		</p>
+	
+		 
+		
+	
+		 <p>In the figure below, you can acquaint yourself with plots of the modular exponentiation function \(f_{a,N}(x)\) for various parameter choices for both the base \(a\) and modulus \(N\).</p>
+
+
+		 <p><iframe src="Visuals/3.7/index.html" width = "520" height = "525"  > </iframe></p>
+	
+	
+		 <p>
+			 In the relevant case where the modular exponentiation function does have a period, we learned that knowledge of the period \(p\) can be used to quickly deduce factors of \(N\). More specifically, once we have found the period \(p\) of \(f_{a,N}\), we could potentially get non-trivial factors of \(N\) by simply calculating the greatest common divisors of the following quantities:
+					 \[gcd(a^{\frac{p}{2}} + 1, N) \quad \text{and} \quad gcd(a^{\frac{p}{2}} - 1, N) . \]
+					 The nice thing about this strategy is how quick and easy it is to compute the greatest common divisors classically all thanks to the Euclidean Algorithm.
+		 </p>
+	
+			
+	
+		<p>Unfortunately, the big computational bottleneck we encountered to make this approach worthwhile was actually finding the period efficiently. Note that there is nothing inherently quantum about the modular exponentiation function \(f_{a,N}\), and computing \(f_{a,N}(x)\) for any single input \(x\) can be done classically and efficiently. The real issue here is that our classical algorithm for period finding could require an exponential number of queries to \(f_{a,N}\) making it inefficient for large \(N\).</p>
+	
+		
+	
+	
+		 <p>Regardless, the function \(f_{a,N}\) possesses a certain global structure which can be exploited to help extract information about its period. We did indeed attempt to leverage some of these properties to optimise our classical algorithm's performance in the previous chapter, but unfortunately we were only able to get so far. For our quantum period finding algorithm we will utilize a quantum gate \(U_{a,N}\) that computes the modular exponentiation function \(f_{a,N}\) which is better able to harness its special structure to help us find the period efficiently!</p>
+	
+		 
+		
+	
+		 <p>As we'll see, there really is something special about the patterns that are manifest in the modular exponentiation function that makes it well suited to be probed by a quantum algorithm. In retrospect, this is one of the main motivations for pursuing the period finding problem as a means to finding factors with a quantum algorithm.</p>
+	
+		
+		
+	
+</section>
+
+<section>
+	
+
+	
+	
+		  <p>Before we get going, let's  cover some formalities regarding how we will label and use quantum states to encode integers for our quantum circuit. Typically, quantum states used for quantum computation are comprised of some number of qubits, which are usually described in binary (base \(2\)) using only \(0\)s and \(1\)s. However, as we have already been doing throughout this course in the context of factoring an integer, it is most natural for us to think of numbers in the familiar setting of base \(10\) where the digits of a number are described in terms of the integers \(0, 1, 2, \dots, 9\). Of course, representing integers in base \(10\) as opposed to base \(2\) is merely an abstract notational choice for how we want to label the states of our system, which has no effect on the underlying physics of the quantum computation.</p>
+	
+		  
+		
+	
+		  <p>
+			  Given a length \(m\) bit string \(b_{m}b_{m-1}\dots b_{1}\), where each \(b_i\) is either \(0\) or \(1\), we can translate it to its corresponding integer quantity \(x\) in base \(10\) using the following equation:
+			  \[ x = \sum_{i=1}^{m}b_i2^{(i-1)}. \]
+			  For the rest of this course we will mainly be representing numbers in base 10 so we won't have to worry too much about translating numbers from one representation to another.
+		  </p>
+	
+		  
+		
+	
+		  <p>
+			  Now as usual, a single qubit's state can be represented in terms of two basis states which we conventionally label as \(|0\rangle\) and \(|1\rangle\). Then a general single qubit superposition can be described as
+			  \[|\psi\rangle = \alpha_0|0\rangle + \alpha_1 |1\rangle, \]
+			  where \(\alpha_0\) and \(\alpha_1\) are complex numbers referred to as amplitudes. In this way, we can think of a single qubit's state space as encoding the two integers \(0\) and \(1\), or a superposition of the two.
+		  </p>
+		  
+		
+	
+		  <p>
+			  More generally, when a quantum state consists of \(m\) qubits, it lives in a \(2^m\) dimensional space which can be described  by \(2^m\) basis states labelled by the \(2^m\) possible bitstrings of length \(m\). These basis states of a \(m\) qubit system are able to represent the first \(2^m\) integers beginning with \(0\).  For example, a basis for a two qubit state space is given by the \(2^2 = 4\) states
+			  \[|0\rangle =|00\rangle, \quad |1\rangle = |01\rangle, \quad |2\rangle = |10\rangle, \quad |3\rangle = |11\rangle . \]
+			  For three qubits, we have \(2^3 = 8\) basis states given by
+			  \[\begin{align*}
+			  |0\rangle &=|000\rangle, \quad |1\rangle = |001\rangle, \quad |2\rangle = |010\rangle, \quad |3\rangle = |011\rangle , \
+			  |4\rangle &=|100\rangle, \quad |5\rangle = |101\rangle, \quad |6\rangle = |110\rangle, \quad |7\rangle = |111\rangle .
+			  \end{align*}\]
+			  In this way, a \(m\) qubit system can also be in a superposition of its \(2^m\) basis states which can be represented as
+			  \[|\psi\rangle = \sum_{x=0}^{2^m - 1}\alpha_x|x\rangle  \]
+			  in terms of \(2^m\) complex valued amplitudes given by \(\alpha_x\).
+		  </p>
+		  
+		
+	
+		  <p>For our quantum algorithm we will need our qubits to encode some finite number of integers. The precise number of integers needed will depend on \(N\), the number we are trying to factor. The more qubits we use, the more integers we can encode. Eventually the exact number of qubits required for Shor's algorithm will be made more precise, but for now we will work with at least the first \(N\) integers. However, since \(m\) qubits allow us to represent exactly \(2^m\) integers, what do we do if we need some number of integers that is not a power of \(2\)?  That's no big deal actually! We simply choose the number of qubits to be the smallest power of \(2\) that is at least as large as our desired number.</p>
+	
+		  
+		
+	
+		  <p>So for instance, if we need to encode only the first \(10\) integers for a quantum computation we would need at least \(4\) qubits, since \(2^4=16 > 10\), while \(2^3=8 < 10\). Having to work with qubits in this way may mean that our quantum state space is bigger than it really needs to be, but we won't let that bother us. We can just ignore those states which encode integers larger than the ones necessary, and restrict our quantum computation to only those states that interest us.</p>
+	
+		  
+		
+	
+		  <p>
+			  A convenient mathematical expression for determining the smallest number of qubits required to encode at least the first \(N\) integers is given by
+			  \[m = \lceil log_2(N) \rceil,  \]
+			  where we use the notation \(\lceil x \rceil \) to round the quantity \(x\) up to its nearest integer value. That is, \(\lceil x \rceil\) is the smallest integer value greater than or equal to \(x \).
+		  </p>
+	
+		  
+		
+	
+		  <h4>Question:</h4>
+	
+		  <p>Suppose we need our \(m\) qubit quantum state to encode the first \(50\) integers for a computation. What is the smallest number of qubits needed?</p>
+	
+		  <h4>Answers:</h4>
+	
+		  <ol>
+		  <li>\(1\)</li>
+	
+		  <li>\(5\)</li>
+	
+		  <li>\(6\)</li>
+	
+		  <li>\(50\)</li>
+		</ol>
+	
+		  <h4>Explanation:</h4>
+	
+		  <p>In order to represent \(50\) integers, the smallest number of qubits required  is \(m=6\), since \(2^6 > 50\) is the smallest power of \(2\) greater than \(50\).</p>
+	
+	
+</section>
+
+<section>
+	
+	
+		<p>
+			Having understood how we use qubits to encode integers for a quantum computation, let's now introduce one of our main players for Shor's algorithm: a quantum gate \(U_{a,N}\) that computes the modular exponentiation function
+			\[f_{a,N}(x) = a^x \ (\text{mod } N). \]
+		</p>
+	
+		
+	
+	
+		 <p>Since the function \(f_{a,N}\) is defined in terms of two parameters, the gate \(U_{a,N}\) will be as well. These two parameters are the number \(N\) to be factored which sets the modulus, and a choice for the base in the range \(2\leq a \leq N-1\). We will only be interested in working with the function \(f_{a,N}\) when the base \(a\) satisfies \(gcd(a,N)=1\), which just means that \(a\) and \(N\) are coprime and share no common factors besides \(1\).  Remember, this criterion on the parameters ensures that the function \(f_{a,N}\) actually has a period for us to find. Moreover, this criterion is necessary to ensure that the gate \(U_{a,N}\) can be defined as a valid reversible quantum operation in the form of a unitary gate. Therefore, we will always assume that the parameters satisfy \(gcd(a,N) = 1\) when we consider the gate \(U_{a,N}\) in our quantum circuit for Shor's algorithm.</p>
+	
+		 
+		
+	
+	
+		<p>Classically, to evaluate the function  \(f_{a,N}\) we just choose an integer \(x\) as input and calculate the output quantity \(f_{a,N}(x)\). However, the function \(f_{a,N}\) is not reversible over the range \(0\leq x \leq N-1\) due to its many-to-one correspondence which maps multiple integers to the same value. To compute this function in a reversible fashion with the quantum gate \(U_{a,N}\), we have to do  something slightly different.</p>
+	
+		
+	
+<p>
+	
+		In order to operate in a reversible manner, the gate \(U_{a,N}\) requires two quantum registers.  Each register will consist of some number of qubits required to encode at least the first \(N\) integers in the range \(0\leq x \leq N-1\). For now, we'll simply choose \(m=\lceil log_2(N) \rceil \) qubits for each of the two registers.  To compute the function value \(f_{a,N}(x)\) with the gate \(U_{a,N}\) we start with our two quantum registers initialized as the state \(|x\rangle|0\rangle\). The first register, which we'll refer to as the **control register**, encodes an input integer \(|x\rangle\). The second register, referred to as the **target register**, will always start initialized to the state \(|0\rangle\) and will be used to encode the function's output value \(|f_{a,N}(x)\rangle\) after applying the gate \(U_{a,N}\). The action of \(U_{a,N}\) is then given by
+		\[ U_{a,N}(|x\rangle |0\rangle) = |x\rangle|f_{a,N}(x)\rangle. \]
+</p>
+	
+		
+	
+	
+		<p>In this way, the first register's state \(|x\rangle\)  remains unchanged by \(U_{a,N}\), while the state of the second register is transformed to the function's corresponding output value \(|f_{a,N}(x)\rangle\). By keeping track of the input integer \(x\), we can always reverse the gate's action if needed. We actually won't need to invert the action of \(U_{a,N}\) at any point in our quantum circuit for Shor's algorithm, but we have to follow this rule to ensure \(U_{a,N}\) is a valid quantum gate in the form of a unitary operation. This is standard practice when designing quantum gates that compute non-reversible classical functions, and you may be familiar with such a construct from other quizzes on the topic.</p>
+	
+		
+	
+	
+		<p>We will represent the gate \(U_{a,N}\) schematically in a quantum circuit as depicted below, where we also show how it acts on the input state \(|x\rangle|0\rangle\).</p>
+	
+		
+	
+		<p class="aligncenter">
+		<img id="oracle gate" src="Visuals/Images/Oracle Gate Action.png" width="400" alt="Oracle">
+		</p>
+		
+	
+	
+		<p>Notice that this quantum circuit has two wires: one for each quantum register. The top/bottom wires represents the control/target registers, respectively. We'll be drawing most of our quantum circuits in this way for convenience, but it's important to not confuse a single wire as representing only a single qubit. Therefore, we'll mark the wires at the beginning of the circuit with the symbol ``\(/^m\)" to remind us that the registers consist of \(m\) qubits.</p>
+	
+		
+	
+	
+		<p><img id="m wires gate" src="Visuals/Images/m wires.png" width="500" alt="m wires"></p>
+	
+		
+	
+</section>
+
+<section>
+	
+
+	
+	
+		<p>Before getting to play with our new quantum gate \(U_{a,N}\) for modular exponentiation, let's take a moment to check in with its algorithmic resource requirements. Of course, in theory we are free to entertain and study any valid quantum gate to be used in a quantum algorithm. As tempting as it may be, we need to be somewhat realistic with the quantum gates we consider, and be sure we aren't getting away with access to something too powerful for practical purposes.</p>
+	
+		
+	
+	
+		<p>When designing quantum gates in the lab for a real quantum computer, it is usually necessary to construct a desired quantum operation in terms of more primitive  gates that are available to the quantum computer. In this course however, we won't concern ourselves with the details on how to actually implement the gate \(U_{a,N}\), and simply treat it as a ``black-box" with its inner workings concealed from view. For this reason, we'll often refer to the gate \(U_{a,N}\) as an ``oracle" for the modular exponentiation function. All we have to do is query the oracle by inputting a quantum state into \(U_{a,N}\), and it will graciously output the transformed state!</p>
+	
+		
+	
+	
+		<p>
+			Of course, it is possible to construct the gate \(U_{a,N}\) in terms of other elementary gates if needed, and this is something we should not take for granted. Most importantly, in regards to the efficiency of our quantum circuit, it would be problematic if constructing the gate \(U_{a,N}\) required exponentially many elementary gates to compute.
+			Fortunately, we can rest assured that implementing the operation \(U_{a,N}\) can in fact be done with a reasonable number of constituent gates. This resource requirement justifies fair use of such an oracle when its time to actually implement the algorithm on an actual quantum computer. It ensures the size of any quantum circuit that uses the oracle will not increase exponentially once the inner details of the ``black box" gate are accounted for by its constituent gates.
+		</p>
+		
+	
+	
+		<p>Remember that to analyze how well our period finding algorithms performed in the classical setting, we simply counted the number of queries we might need to the function \(f_{a,N}\). Now in the quantum setting we'll do the same, but instead count the number of queries to the oracle \(U_{a,N}\) that may be needed. To compete with the classical algorithms, our main goal is to try to make fewer queries to \(U_{a,N}\) than the exponentially many queries to \(f_{a,N}\) required for classical period finding.</p>
+		
+	
+	
+		<p>Let's start experimenting and see what our quantum oracle \(U_{a,N}\) for modular exponentiation really offers!</p>
+
+
+</section>
+
+<section>
+	
+	
+	
+		<p>To help us visualize the action of the oracle \(U_{a,N}\) and other states we'll construct with our quantum circuit, we'll use something similar to the discrete plots of the function \(f_{a,N}\) we saw in the last chapter. There we described the function's values as points given by ordered pairs \( (x, f_{a,N}(x) ) \), where the numbers \(x\) and \(f_{a,N}(x)\) give the coordinates of the corresponding point along the horizontal and vertical axis, respectively.</p>
+	
+		
+	
+	
+		<p>To describe our quantum states visually we will deploy an analogous coordinate system, but now we will imbue some additional meaning to the points that appear. The horizontal axis will now represent the basis states of our first register, while the vertical axis will represent those of our second register. In this way, a point at the coordinate \((x, y)\) will correspond to the basis state \(|x\rangle|y\rangle\) of our two quantum registers.   This will allow us to intuitively keep track of the state of our quantum system at different steps of the circuit.</p>
+	
+		
+	
+	
+		<p>
+			To get a feel for what its like to query the oracle \(U_{a,N}\), let's work with a specific choice of parameters, \(a=2\) and \(N=15\), corresponding to the function
+			\[f_{2,15}(x) = 2^x \ (\text{mod } 15).\]
+			For \(U_{2,15}\) we need each of our quantum registers to encode the first \(15\) integers (starting with \(0\)) so let's take each register to consist of \(m=4\) qubits, which gives us a state space of dimension \(M=2^4=16\) for each register.
+		</p>
+	
+		
+	
+	
+		<p>In the figure below, you can select any integer in the range \(0\leq x \leq 15\) to initialize the quantum state \(|x\rangle|0\rangle\). Since the second register always begins in the state \(|0\rangle\), the points corresponding to the basis states \(|x\rangle|0\rangle\) lie on the horizontal axis. By querying the oracle with the input state \(|x\rangle|0\rangle\), you'll see it get transformed to the output state \(|x\rangle|f_{2,15}(x)\rangle\).</p>
+	
+		
+	
+	
+		<p><iframe src="Visuals/5.1.1/index.html" width = "520" height = "625"  > </iframe></p>
+	
+		
+	
+	
+		<p>This probably doesn't seem so exciting or much different compared to the way we made classical queries to the function by simply choosing an input integer \(x\) and getting an output value \(f_{a,N}(x)\).</p>
+	
+	
+		<h4>Question:</h4>
+
+		<p>If we only query the oracle \(U_{a,N}\) once on a single basis state \(|x\rangle|0\rangle\), do we get any more information about the function \(f_{a,N}\) compared to a single classical query with input \(x\)?</p>
+	
+		<h4>Answers:</h4>
+	
+		<p>Yes</p>
+		<p>No</p>
+	
+		<h4>Explanation:</h4>
+
+		<p>No!</p>
+
+</section>
+
+<section>
+	
+	
+<p>
+	
+			If we only input a single basis state \(|x\rangle|0\rangle\) into the oracle \(U_{a,N}\), then the output state \(|x\rangle|f_{a,N}(x)\rangle\) effectively contains the same information we get by making a classical query to the function \(f_{a,N}\) with the integer \(x\).  Computing just a single value \(f_{a,N}(x)\) quantumly in this way seems like overkill when we can do it just as well classically, so why even bother?
+</p>
+	
+		
+	
+	
+		<p>
+			The true power of the quantum oracle \(U_{a,N}\) comes from its ability to operate on superpositions of states! As a bona fide quantum gate, \(U_{a,N}\) acts as a linear transformation which allows it to exploit **quantum parallelism*. This is an essential feature of quantum gates so let's recall what a linear transformation affords us. In general, if
+			\[|\psi\rangle =\sum_x\alpha_x|x\rangle\]
+			is some arbitrary superposition of states, then the linearity of a quantum gate \(U\) implies that
+			\[
+			\begin{align*}
+			U|\psi\rangle &= U\left(\sum_x\alpha_x|x\rangle \right)  \
+			&=\sum_x\alpha_xU|x\rangle .
+			\end{align*}\]
+		</p>
+	
+		
+	
+	
+		<p>The linearity of a quantum gate \(U\) is quite suggestive from a quantum algorithms standpoint. If we need to compute a gate \(U\) on multiple input states, then by constructing a single superposition over these input states and applying \(U\) just once, we can obtain a superposition over the respective output states. This is essentially what the phenomenon of quantum parallelism means, but we shouldn't get too excited and mislead ourselves! Extracting all the information that may be contained in superposition states is a delicate matter and not as straightforward as it may seem! We'll have to deal with this challenge as we proceed with our quantum algorithm.</p>
+	
+		
+	
+<p>
+	
+		From a mere mathematical perspective, the linearity of a quantum gate is nice property that allows us to conveniently determine the transformed state  \(U|\psi\rangle\) in terms of its action on the basis states \(U|x\rangle\). Coming back to the oracle \(U_{a,N}\) for example, linearity implies that if we were to query the oracle with a superposition of two different states of our registers, say \(|x_1\rangle|0\rangle\) and \(|x_2\rangle|0\rangle\), then the output state would itself be given by a superposition of the form
+		\[ \begin{align*}
+		 U_{a,N}(|x_1\rangle|0\rangle + |x_2\rangle|0\rangle) &= U_{a,N}(|x_1\rangle|0\rangle) + U_{a,N}(|x_2\rangle|0\rangle) \
+		&= |x_1\rangle|f_{a,N}(x_1)\rangle + |x_2\rangle|f_{a,N}(x_2)\rangle
+		\end{align*}\]
+		Remarkably, this output state contains information about the values of the function for two different integers  \(x_1\) and \(x_2\), which we get with just a single query to \(U_{a,N}\) --- not two separate queries!
+</p>
+	
+		
+	
+<p>
+	
+		Let's not stop here! Suppose we were to somehow query the oracle with a state in which the first register of our system is in an equally weighted superposition of all \(16\) basis states, while the second register remains initialized to \(|0\rangle\). Let's denote this state of our two registers as \(|\Psi_1\rangle\), which can be described as
+		\[ |\Psi_1\rangle = \frac{1}{\sqrt{16}}\sum_{x=0}^{15}|x\rangle|0\rangle. \]
+		Note that we include the normalization factor of \(\frac{1}{\sqrt{16}}=\frac{1}{4}\) in this expression since the \(16\) states that appear in the superposition are equally weighted.
+</p>
+	
+		
+	
+	
+		<p>In the diagram below, the superposition \(|\Psi_1\rangle\) is initialized as input for the oracle \(U_{2,15}\). As you can see, to visually represent this superposition state a point is present for each of the \(16\) states \(|x\rangle|0\rangle\) that appear in the superposition \(|\Psi_1\rangle\). In general, whenever multiple points exist in our plots of states at any given time it means that our system's state is in some superposition. To visually emphasize the non-classical nature of superposition states, we'll animate the various points as shown to symbolize their quantum nature.</p>
+	
+		
+	
+	
+		<p>Query the oracle with the superposition state \(|\Psi_1\rangle\) as input and observe the output state in its full glory, which we'll label as  \[|\Psi_2\rangle = U_{2,15}|\Psi_1\rangle.\]</p>
+	
+		
+	
+	
+		<p><iframe src="Visuals/5.1.2/index.html" width = "520" height = "625"  > </iframe></p>
+	
+		
+	
+	
+		 <p>Remarkably, the resulting output state \(|\Psi_2\rangle\) consists of a superposition containing information of all the function values \(f_{2,15}(x)\) over the range \(0\leq x \leq 15\), which we get with just a single query to \(U_{2,15}\)!</p>
+	
+		 
+		
+	
+		<h4>Question:</h4>
+	
+		<p>Which of the following expressions describes the output state \(|\Psi_2\rangle = U_{2,15}|\Psi_1\rangle\)?</p>
+	
+		<h4>Answers:</h4>
+	<p>
+		
+			\[\frac{1}{\sqrt{16}}\sum_{x=0}^{15}|x\rangle|x\rangle \]
+		
+			\[\frac{1}{\sqrt{16}}\sum_{x=0}^{15}|x\rangle|f_{2,15}(x)\rangle \]
+		
+			\[\frac{1}{\sqrt{16}}\sum_{x=0}^{15}|f_{2,15}(x)\rangle|x\rangle \]
+		
+			\[\frac{1}{\sqrt{16}}\sum_{x=0}^{15}|f_{2,15}(x)\rangle|f_{2,15}(x)\rangle \]
+		
+	</p>
+
+		<h4>Explanation:</h4>
+	
+		<p>
+			Since we know the gate \(U_{a,N}\) acts on the states \(|x\rangle|0\rangle\) as
+			\[U_{a,N}(|x\rangle|0\rangle)=|x\rangle|f_{a,N}(x)\rangle, \]
+			then by linearity the superposition \(|\Psi_1\rangle\) gets transformed as
+			\[\begin{align*}
+			U|\Psi_1\rangle &=U_{a,N}\left(\frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|0\rangle \right) \
+			&=\frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}U_{a,N}(|x\rangle|0\rangle) \
+			&=\frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle .
+			\end{align*}\]
+		</p>
+	
+</section>
+
+<section>
+	
+	
+	
+	
+		<p>
+			In general, if we start with the input state
+			\[ |\Psi_1\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|0\rangle, \]
+			in which the first \(m\) qubit register is in a superposition of all its \(M=2^m\) basis states while the second register remains initialized to the state \(|0\rangle\),
+			then a single query to the oracle \(U_{a,N}\) produces the output superposition \[|\Psi_2\rangle = U_{a,N}|\Psi_1\rangle =\frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle. \]
+			By virtue of the quantum parallelism offered by \(U_{a,N}\), the second register of the output state \(|\Psi_2\rangle\) contains the function's values \(f_{a,N}(x)\) for all integers \(0\leq x \leq M-1\), which is exponentially many in terms of the number of qubits which comprise the state.
+		</p>
+		
+	
+	
+		<p>The state \(|\Psi_2\rangle\) is a valuable quantum state rich with information about the function \(f_{a,N}\). The best part is that all it took to get this state was a single query to the oracle \(U_{a,N}\)! In contrast, to compute all these function values classically we would have to make an exponential number of queries to the function \(f_{a,N}\) to compute all of its values over the range \(0\leq x \leq M-1\).</p>
+	
+		
+	
+	
+		<p>
+			We are making good progress here, but let's not get too ahead of ourselves! Before we go further and try to extract useful information from the queried state \(|\Psi_2\rangle=U_{a,N}|\Psi_1\rangle\), we first need to figure out a proper way to actually construct the input superposition
+			\[|\Psi_1\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|0\rangle\]
+			before we get to make a query with it. Let's take a step back and focus on just single qubit states and gates for some inspiration.
+		</p>
+	
+		
+	
+	
+		<h4>Question:</h4>
+	
+		<p>Which of the following single qubit gates would transform the qubit state \(|0\rangle\) into an equally weighted superposition of its two basis states \(|0\rangle\) and \(|1\rangle\)? Here we express the various gates in terms of their matrix representation in the ordered basis of \(|0\rangle\) and \(|1\rangle\).</p>
+	
+		<h4>Answers:</h4>
+	<p>
+		
+			<ol>
+			  <li>
+				\[ I = \begin{bmatrix} 1 & 0 \ 0 & 1 \end{bmatrix} \]
+				</li>
+			<li>
+			\[ X = \begin{bmatrix} 0 & 1 \ 1 & 0 \end{bmatrix} \]
+			</li>
+			<li>
+			\[ Z = \begin{bmatrix} 1 & 0 \ 0 & -1 \end{bmatrix} \]
+			</li>
+			<li>
+			\[ H = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1 \ 1 & -1 \end{bmatrix} \]
+			</li>
+			</ol>
+		
+	</p>
+
+		<h4>Explanation:</h4>
+	<p>
+		
+			To work in matrix form, we identify the two basis states of a single qubit with the vectors
+			\[ |0\rangle = \begin{bmatrix} 1 \ 0\end{bmatrix} \qquad \text{and} \qquad |1\rangle = \begin{bmatrix} 0 \ 1\end{bmatrix} . \]
+			Applying the Hadamard gate \(H\) to the state \(|0\rangle\) then gives
+			\[H|0\rangle = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 & 1 \ 1 & -1 \end{bmatrix}\begin{bmatrix} 1 \ 0\end{bmatrix} = \frac{1}{\sqrt{2}}\begin{bmatrix} 1 \ 1\end{bmatrix} = \frac{1}{\sqrt{2}}(|0\rangle + |1\rangle), \]
+			which is an equally weighted superposition of the two basis states \(|0\rangle\) and \(|1\rangle\) as desired.
+		
+			The other two gates give us  \(X|0\rangle=|1\rangle\) and \(Z|0\rangle = |0\rangle \), where neither of these transformed states are the desired superposition.
+		
+	</p>
+	
+</section>
+
+<section>
+	
+
+	
+	
+		<p>
+			The trusty single qubit Hadamard gate \(H\) is just what we need to construct our desired superposition state. When applied to the single qubit basis state \(|0\rangle\), the action of the Hadamard gate gives us an equally weighted superposition over the two basis states:
+			\[H|0\rangle = \frac{1}{\sqrt{2}}(|0\rangle + |1\rangle). \]
+		</p>
+	
+		
+	
+	
+		<p>Remember though, the registers of our circuit consist of multiple qubits, and merely applying a single Hadamard gate on just one particular qubit will not yield the desired superposition over all \(2^m\) basis states of the \(m\) qubit register.</p>
+	
+		
+	
+	
+		<p>
+			For instance, let's suppose the first register of our system is comprised of \(m=4\) qubits all initialized to the state \[|\mathbf{0}\rangle = |0000\rangle . \]
+			To understood precisely what superpositions we can construct with single qubit Hadamard gates, here we'll work with labelling our states in both base \(10\) (displayed in bold)  and base \(2\). In this regard, denote by \(H_j\) the single qubit Hadamard gate that acts on the $j$-th qubit.
+		</p>
+	
+		
+	
+	
+		<p>
+			Applying \(H_1\) to the first (right-most) qubit of the state gives
+			\[H_1|\mathbf{0}\rangle = H_1|0000\rangle = \frac{1}{\sqrt{2}}(|0000\rangle + |0001\rangle) = \frac{1}{\sqrt{2}}(|\mathbf{0}\rangle + |\mathbf{1}\rangle ), \]
+			which in base \(10\) is just a superposition over the two states encoding the integers \(0\) and \(1\). Since we didn't apply anything to the rest of the qubits, their state's remain unchanged.
+		</p>
+		
+	
+	
+		<p>
+			In general, if we start with a \(m\) qubit basis state indexed in binary as \(|b_mb_{m-1}\dots b_1\rangle\), and apply the single qubit Hadamard \(H_j\) we only put the \(j\)-th qubit into superposition as follows
+			\[\begin{align*}
+			H_j|b_mb_{m-1}\dots b_1 \rangle &=
+			\frac{1}{\sqrt{2}}(|\dots b_{j+1}0b_{j-1}\dots\rangle + |\dots b_{j+1}1b_{j-1}\dots\rangle) \
+			&= \frac{1}{\sqrt{2}}(|\mathbf{0}\rangle + |\mathbf{2^{j - 1}}\rangle ),
+			\end{align*}\]
+			Of course, since we only acted on the \(j\)th qubit, the state of all other qubits remains unchanged.
+			Indexing the register's basis states in base \(10\), shows that the transformed state is a superposition over the two integers \(0\) and \(2^{j-1}\).
+			
+		</p>
+	
+	
+		<p>In order to construct \(|\Psi_1\rangle\), our desired superposition state over all \(2^n\) basis states, we have to apply more than a single Hadamard gate on just some particular qubit.</p>
+		
+	
+	
+		<p><iframe src="Visuals/5.1.4/index.html" width = "520" height = "275"  > </iframe></p>
+	
+	
+		<h4>Question:</h4>
+	
+		<p>
+			Starting with the initial \(m\) qubit state \(|0\rangle=|00\dots0\rangle\), how can we obtain a superposition over all \(2^m\) basis states
+			\[\frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle ? \]
+		</p>
+	
+		<h4>Answers:</h4>
+	
+		<ol>
+		<li>Apply a Hadamard gate on the first and last qubit.
+		<li>
+		Apply a Hadamard gate to every other qubit.
+		</li>
+		<li>
+		Apply a Hadamard gate to all \(m\) qubits.
+		</li>
+		</ol>
+
+		<h4>Explanation:</h4>
+	
+	
+	
+</section>
+
+<section>
+	
+	
+		
+	
+	
+	<p>
+		
+			By applying a Hadamard gate to every qubit of a \(m\) qubit register in the state \(|0\rangle\), we can construct a superposition over all \(M=2^m\) basis states:
+			\[\frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle. \]
+			As a notational shorthand, we'll write \(H^{\otimes m}\) to denote the operation for applying the single qubit Hadamard gate to all \(m\) qubits of the register,and sometimes refer to \(H^{\otimes m}\) as the **Hadamard transform**.
+		
+		
+	</p>
+	
+	
+		<p class="aligncenter">
+		<img id="Hadamard Transform" src="Visuals/Images/Hm gate equivalence.png" width = "500" alt="Hadamard Transform">
+		</p>
+	
+		
+	
+	<p>
+		
+			By using the Hadamard transform we can now make an explicit circuit for querying the oracle \(U_{a,N}\) in superposition as shown below.
+		
+	</p>
+		
+	
+	
+		<p class="aligncenter">
+		<img id="superposition query circuit" src="Visuals/Images/circuit H-U.png" width="400" alt="superposition query circuit">
+		</p>
+	
+		
+	
+	<p>
+		
+			This circuit for querying the oracle \(U_{a,N}\) in superposition will be at the core of our quantum period finding circuit. So let's take note and recap what this circuit is doing to the quantum state. As we have already seen, it describes a three step process.
+		
+	</p>
+		
+	<p>
+		
+		
+			To start, the input state of our circuit will always be initialized so that each register is in the state \(|0\rangle\). We'll consider this Step 0, and label this initial state of our system as \(|\Psi_0\rangle\):
+		
+	</p>
+		
+	<p>	
+			\( \text{Step 0:} \qquad |\Psi_0\rangle = |0\rangle|0\rangle. \)
+	</p>
+	
+	<p>
+		
+			Next, we apply the multi-qubit Hadamard \(H^{\otimes m}\) to only the first register transforming the initial state to one in which the first register is put in superposition over all its basis states, while the second register remains in the state \(|0\rangle\):
+	</p>
+	
+		
+	
+	<p>
+		
+			\(\text{Step 1:} \qquad |\Psi_0\rangle\overset{H^{\otimes m}}{\longmapsto} |\Psi_1\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|0\rangle. \)
+		
+	</p>
+		
+	
+	<p>
+		
+			Now in the third step, querying the oracle \(U_{a,N}\) with this superposition results in the state
+		
+	</p>
+		
+	
+	<p>
+		
+			\(\text{Step 2:} \qquad |\Psi_1\rangle \overset{U_{a,N}}{\longmapsto} |\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle, \)
+		
+	</p>
+		
+	
+	<p>
+		
+			where the system is now over an equally weighted superposition of all states \(|x\rangle|f_{a,N}(x)\rangle \)  effectively encoding all the function values \(f_{a,N}(x)\) over the range \(0\leq x\leq M-1\).
+		
+		
+	</p>
+	
+	
+	<p>
+		
+			You can see all this in action in the interactive below, which shows the particular circuit for  previous example we looked at with \(m=4\) qubits for each register for the gate \(U_{2,15}\). Here you can choose to step through the intermediary states of the circuit, or run the whole circuit.
+		
+	</p>
+		
+	
+	<p>
+		
+			<iframe src="Visuals/5.1.3/index.html" width = "520" height = "625" > </iframe>
+		
+	</p>
+	
+		
+	
+	<p>
+		
+			Despite the state \(|\Psi_2\rangle\) holding so much valuable information about the function \(f_{a,N}\), the fact that it exists in superposition makes accessing this information tricky. In order to get any information from this precious superposition we have to measure it, but this means we have to face the real consequences of measuring a quantum state!
+	</p>
+	
+</section>
+
+<section>
+
+	<p>
+			Unlike measuring a classical system, measuring a quantum state in superposition is usually a disruptive process which not only changes the  pre-measurement state, but does so in a probabilistic fashion. To be more specific, when we measure an arbitrary quantum superposition
+			\[|\psi\rangle = \sum_x\alpha_x|x\rangle, \]
+			the post-measurement state that results is only one of the basis states \(|x\rangle\) with a probability given by the squared norm of its corresponding amplitude \(\alpha_x\):
+			\[Prob[|x\rangle] = |\alpha_x|^2. \]
+		
+	</p>
+		
+	
+	<p>
+		
+			After the measurement is made the original superposition state is destroyed and left in a single observed basis state. Measuring the resulting state again would only ever produce the same basis state observed from the first measurement. Therefore, we would have to recreate the initial superposition state again if we wanted to make any additional independent measurements of it.
+		
+	</p>
+		
+	
+	<p>
+		
+			To interpret this measurement rule for the states of our quantum circuit, recall that a general superposition in this two-register setting is given as
+			\[|\Psi\rangle = \sum_{x,y}\alpha_{x,y}|x\rangle|y\rangle, \]
+			where the sum ranges over all basis states \(|x\rangle\) and \(|y\rangle\) of the first and second registers, respectively.
+			Here we have an amplitude \(\alpha_{x,y}\) for each pair \(|x\rangle|y\rangle\) of basis states of the whole system. Performing a measurement on both registers of the system then results in the basis state \(|x\rangle|y\rangle\) with a probability of
+			\[ Prob[|x\rangle|y\rangle] = |\alpha_{x,y}|^2.\]
+		
+		
+	</p>
+	
+	<p>
+		
+			Let's go ahead and measure both registers of our circuit and see what happens.
+		
+	</p>
+
+		<p class="aligncenter">
+		<img src="Visuals/Images/circuit H-U-M12.png" width="400" alt="circuit image">
+		</p>
+	<p>
+		
+			In the figure below, we simulate making a measurement of both registers of the state  \(|\Psi_2\rangle = U_{a,N}|\Psi_1\rangle\)  after querying the oracle in superposition. As described, we only observe one of the basis states \(|x\rangle|y\rangle\) that appeared in the superposition with some probability.
+		
+	</p>
+		
+	
+	<p>
+		
+			In order to make another independent measurement we have to reconstruct the state \(|\Psi_2\rangle = U_{a,N}|\Psi_1\rangle\) again from scratch. This requires us to reinitialize the input state \(|\Psi_0\rangle = |0\rangle|0\rangle\), and then run the circuit again every time we want to make another measurement of \(|\Psi_2\rangle = U_{a,N}|\Psi_1\rangle\).
+		
+	</p>
+	
+	<p>
+		
+			Consider running the circuit multiple times and observe the measurement statistics. For reference, we'll  show a histogram of the measurement results by displaying bars along the two axis to get a relative count of the measurement results for each register.
+		
+	</p>
+		
+	
+	<p>
+		
+			<iframe src="Visuals/5.2/index.html" width = "520" height = "625"  > </iframe>
+		
+	</p>
+		
+	
+	
+		<h4>Question:</h4>
+	<p>
+		
+			If we make multiple measurements of the state
+			\[|\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle \]
+			what basis states could be observed and with what probability?
+		
+	</p>
+		<h4>Answers:</h4>
+	
+		<ol>
+		<li>Any basis state \(|x\rangle|y\rangle\) with equal probability.
+		</li>
+		<li>
+		Any basis state of the form \(|x\rangle|f_{a,N}(x)\rangle\), each with probability \(\frac{1}{M}\).
+		</li>
+		<li>
+		Only the particular basis state \(|p\rangle|f_{a,N}(p)\rangle\) with probability \(1\), where \(p\) is the period of \(f_{a,N}\).
+		</li>
+		</ol>
+	
+		<h4>Explanation:</h4>
+	<p>
+		
+			By examining the the state
+			\[|\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle \]
+			 in terms of the computational basis \(|x\rangle|y\rangle\) we see that its amplitudes are given by
+			 \[ \alpha_{x,y} = \left\{
+			\begin{array}{cl}
+			\frac{1}{\sqrt{M}} &\quad \text{if } y=f_{a,N}(x) \quad \text{for some } 0\leq x\leq M-1 \
+			 & \
+			0 &\quad \text{otherwise}
+			\end{array} \right. \]
+			Therefore, by calculating the probability of observing the basis state \(|x\rangle|y\rangle\) with \(Prob[|x\rangle|y\rangle]=|\alpha_{x,y}|^2\) we have
+			\[ Prob[|x\rangle|y\rangle] = \left\{
+			\begin{array}{cl}
+			\frac{1}{M} &\quad \text{if } y=f_{a,N}(x) \quad \text{for some } 0\leq x\leq M-1 \
+			 & \
+			0 &\quad \text{otherwise}
+			\end{array} \right.  \]
+	</p>
+
+</section>
+
+<section>
+	
+<p>
+	
+	
+		When we measure both registers of the queried superposition state
+		\[ |\Psi_2\rangle = \frac{1}{\sqrt{M}}\sum_{x=0}^{M-1}|x\rangle|f_{a,N}(x)\rangle ,\]
+		we only observe one of the basis states of the form \(|x\rangle|f_{a,N}(x)\rangle\) that appear in the superposition. Since there are a total of \(M\) states present in the equally-weighted superposition \(|\Psi_2\rangle\), each one of these basis states is observed with an equal probability of \(\frac{1}{M}\).
+	
+	
+</p>
+
+	
+	<p><iframe src="Visuals/5.2/index.html" width = "520" height = "625"  > </iframe></p>
+	
+	
+
+	<p>
+		
+		After all this effort harnessing quantum phenomenon to construct the precious state \(|\Psi_2\rangle\) which encodes information of the values of the function \(f_{a,N}\) in superposition, just measuring the whole system right away destroys the superposition leaving us with information about only one particular function value \(f_{a,N}(x)\) according to the random measurement observation. In order to obtain any additional information about the function \(f_{a,N}\) in this way,  we would have to make another measurement of \(|\Psi_2\rangle\) by recreating the state again from scratch. This requires an additional query to the oracle \(U_{a,N}\) in our circuit for every new measurement! Therefore,we better be careful and consider the cost of utilizing our valuable oracle \(U_{a,N}\) if we resort to obtaining information this way.
+		
+		
+	</p>
+
+	<p>
+		
+		Compare this quantum process described by our circuit to how me made random queries to the function \(f_{a,N}\) in the classical setting as done in the last chapter. We did this by first choosing a random integer in the range \(0\leq x \leq M-1\) with equal probability, and then simply querying the function \(f_{a,N}(x)\).
+		
+	</p>
+	
+
+	<p>
+		
+		<iframe src="Visuals/5.3/index.html" width = "520" height = "525"  > </iframe>
+		
+	</p>
+	
+
+	
+	<h4>Question:</h4>
+	
+	<p>Which one of these two methods gives us more information about the function \(f_{a,N}\)? The classical method or the quantum method?</p>
+	
+	<h4>Answers:</h4>
+	
+	<ol>
+	<li>Classical Method</li>
+	
+	<li>Quantum Method</li>
+	
+	<li>Both give the same amount of information.</li>
+	</ol>
+	
+	
+	<h4>Explanation: </h4>
+	
+	
+	<hr>
+	
+</section>
+
+<section>
+	
+
+	
+	<p>
+		
+			Whether we make a random classical query to the function
+			\(f_{a,N}\), or utilize our fancy quantum circuit to query the oracle \(U_{a,N}\) in superposition and measuring, the actual information we gain about the the function is the same in either case!
+			Alas, measuring both registers of the state \(|\Psi_2\rangle\) right away is a waste when we can get the same information about the function \(f_{a,N}\) with a classical query.
+		
+	</p>
+		
+	
+	
+		<p>That's too bad; especially given how rich with information the queried superposition state \(|\Psi_2\rangle\) is. Unfortunately, it seems the power of quantum superposition does not offer us as much as we hoped! Well, not all by itself at least. If we are expecting an algorithmic speedup with our quantum computation, we are going to have to utilize something more than just mere quantum superposition.</p>
+	
+		
+	
+	
+		<p>
+			There really is something deeper going on with the queried superposition state \(|\Psi_2\rangle\) that we ought to preserve and harness more carefully.
+			What can be more special than quantum superposition you wonder? Quantum entanglement -- a unique phenomena which results when the states of multiple quantum systems are correlated in a non-classical way!
+		</p>
+	
+		
+	
+	
+		<p>As we'll see, the periodic pattern of the function \(f_{a,N}\) encodes a special structure into the state \(|\Psi_2\rangle\) that manifests as certain correlations between the states of the two registers of our system. By carefully harnessing this quantum entanglement, we'll be able to get valuable information about the function's period!</p>
+	
+		
+	
+	
+		<p>In the next chapter, we'll pick apart the structure embodied in the valuable queried superposition state and reveal its entangled nature.  With this understanding, we'll be able to better exploit both quantum superposition and entanglement in designing a quantum circuit for a fast period finding algorithm that will in turn lead us to a fast factoring algorithm!</p>
+
+		<div>
+			<a href="chapter6.html">Next: Chapter 6 </a>
+			<br>
+			<a href="index.html">Contents</a>
+		</div>
+	
+</section>
+		
+
+
+
+
+
+
+
+	</div>
+	</div>
+
+		<script src="dist/reveal.js"></script>
+		<script src="plugin/notes/notes.js"></script>
+		<script src="plugin/markdown/markdown.js"></script>
+		<script src="plugin/highlight/highlight.js"></script>
+		<script src="plugin/math/math.js"></script>
+		<script>
+			// More info about initialization & config:
+			// - https://revealjs.com/initialization/
+			// - https://revealjs.com/config/
+			Reveal.initialize({
+				history: true,
+				//transition: 'linear',
+				hash: true,
+				//disableLayout: false,
+
+				// slide numbering
+				slideNumber: 'c/t',
+
+
+				// The "normal" size of the presentation, aspect ratio will
+  				// be preserved when the presentation is scaled to fit different
+  				// resolutions. Can be specified using percentage units.
+  				width: 960,
+  				height: 800,
+
+  				// Factor of the display size that should remain empty around
+  				// the content
+  				margin: 0.04,
+
+  				// Bounds for smallest/largest possible scale to apply to content
+  				minScale: 0.2,
+  				maxScale: 2.0,
+
+				math: {
+					mathjax: 'https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.0/MathJax.js',
+					config: 'TeX-AMS_HTML-full',
+					TeX: {
+						Macros: {
+							R: '\\mathbb{R}',
+							set: [ '\\left\\{#1 \\; ; \\; #2\\right\\}', 2 ]
+						}
+					}
+				},
+
+				// Learn about plugins: https://revealjs.com/plugins/
+				plugins: [ RevealMarkdown, RevealHighlight, RevealNotes, RevealMath ]
+			});
+		</script>
+	</body>
+</html>
